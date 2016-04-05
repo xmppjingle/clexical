@@ -1,0 +1,18 @@
+{application, clexical,
+    [
+        {description, "Basic Erlang Based Template Service"},
+        {vsn, git},
+        {registered, []},
+        {applications, [
+            kernel,
+            stdlib,
+            lager,
+            riakc,
+            protobuffs,
+            riak_pb
+        ]},
+        {mod, {clexical_app, []}},
+        {env, [
+
+        ]}
+    ]}.
