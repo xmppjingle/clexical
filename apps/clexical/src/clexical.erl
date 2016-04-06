@@ -17,6 +17,7 @@
 
 %% API Methods
 -export([
+    fresh_id/0
 ]).
 
 start_link(_, _) ->
@@ -37,6 +38,12 @@ handle_cast(_Msg, State) ->
     lager:debug("Received Cast: ~p~n", [_Msg]),
     {noreply, State}.
 
+handle_call(fresh_id, _From, #state{lastid=LID}=State) ->
+    ID = LID + 1,
+    {reply, ID, State#state{lastid=ID}};
+handle_call({submit, #node{}=Node}, _From, _State) ->
+    submit(Node),
+    {reply, ok, _State};
 handle_call(Info, _From, _State) ->
     lager:info("Received Call: ~p~n", [Info]),
     {reply, ok, _State}.
@@ -47,3 +54,9 @@ terminate(_Reason, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
+submit(#node{context=_Context, id=_ID, elem=_Elem}) ->
+    ok.
+
+fresh_id() ->
+    gen_server:call(clexical, fresh_id).

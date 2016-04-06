@@ -1,6 +1,5 @@
 
--record(script, {id, node}).
 -record(node, {context, id, elem}).
--record(state, {}).
+-record(state, {lastid=0}).
 
 -define(LOGO, "Clexical Evaluator~n").
