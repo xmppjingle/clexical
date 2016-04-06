@@ -9,20 +9,22 @@
 -export([init/1]).
 
 %% Helper macro for declaring children of supervisor
--define(CHILD(I, Type), {I, {I, start_link, []}, permanent, 5000, Type, [I]}).
+-define(CHILD(I, Args), {I, {I, start_link, Args}, permanent, 5000, worker, [I]}).
+
 
 %% ===================================================================
 %% API functions
 %% ===================================================================
 
-start_link(_) ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+start_link([Clexical, Redis]) ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, [Clexical, Redis]).
 
 %% ===================================================================
 %% Supervisor callbacks
 %% ===================================================================
 
-init(_) ->
+init([Clexical, Redis]) ->
     {ok, {{one_for_one, 5, 10}, [
-    	?CHILD(riakc_pb_socket, ["127.0.0.1", 8087])
+    	?CHILD(clexical, Clexical),
+        ?CHILD(redo, Redis)
     ]}}.

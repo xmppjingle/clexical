@@ -1,29 +1,49 @@
 -module(clexical).
+-behaviour(gen_server).
 
+-include("../include/clexical.hrl").
+
+%% gen_server callbacks
 -export([
-	init/3,
-	handle/2,
-	terminate/3
-	]).
+    start_link/2,
+    stop/0,
+    init/1,
+    handle_call/3,
+    handle_cast/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3
+]).
 
-init(_Transport, Req, []) ->
-	{ok, Req, undefined}.
+%% API Methods
+-export([
+]).
 
-terminate(_Reason, _Req, _State) ->
-	ok.
+start_link(_, _) ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-handle(Req, State) ->
-	{Method, Req2} = cowboy_req:method(Req),
-	{Dict, _}= cowboy_req:qs_vals(Req),
-	{Filename, _} = cowboy_req:qs_val(<<"template">>, Req, <<"./default.xml">>),
-	Template = bbmustache:parse_file(filename:join([filename:absname(""), filename:absname(filename:basename(Filename), "./templates/")])),
-	Body = bbmustache:compile(Template, Dict, [{key_type, binary}]),
-	{ok, Req4} = response(Method, Body, Req2),
-	{ok, Req4, State}.
+stop() ->
+    gen_server:call(?MODULE, stop).
 
-response(<<"GET">>, Body, Req) ->
-	cowboy_req:reply(200,
-		[{<<"content-encoding">>, <<"utf-8">>}, {<<"content-type">>, <<"application/xml">>}], Body, Req);
-response(_, _, Req) ->
-	%% Method not allowed.
-	cowboy_req:reply(405, Req).
+init(_Params) ->
+    lager:info(?LOGO,[]),
+    {ok, #state{}}.
+
+handle_info(Record, State) ->
+    lager:debug("Unknown Info Request: ~p~n", [Record]),
+    {noreply, State}.
+
+handle_cast(_Msg, State) ->
+    lager:debug("Received Cast: ~p~n", [_Msg]),
+    {noreply, State}.
+
+handle_call(Info, _From, _State) ->
+    lager:info("Received Call: ~p~n", [Info]),
+    {reply, ok, _State}.
+
+terminate(_Reason, _State) ->
+    lager:info("Terminated Component.", []),
+    ok.
+
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.

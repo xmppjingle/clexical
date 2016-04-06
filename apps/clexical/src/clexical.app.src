@@ -1,15 +1,13 @@
 {application, clexical,
     [
-        {description, "Basic Erlang Based Template Service"},
+        {description, "Clexical Meta Event Driven Evaluator"},
         {vsn, git},
         {registered, []},
         {applications, [
             kernel,
             stdlib,
             lager,
-            riakc,
-            protobuffs,
-            riak_pb
+            redo
         ]},
         {mod, {clexical_app, []}},
         {env, [
