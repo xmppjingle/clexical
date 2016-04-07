@@ -13,8 +13,11 @@ start(_StartType, _StartArgs) ->
     [Conf] = confetti:fetch(mgmt_conf),
     Config = proplists:get_value(clexical, Conf, []),
     RedisOpts = redis_opts(Config),
+    Parser = proplists:get_value(parser, Config),
+    Runner = proplists:get_value(runner, Config),
+    Hanger = proplists:get_value(hanger, Config),
     init_cowboy(),
-    clexical_sup:start_link([[none, none], [RedisOpts]]).
+    clexical_sup:start_link([[Parser, Runner, Hanger], [RedisOpts]]).
 
 stop(_State) ->
     ok.

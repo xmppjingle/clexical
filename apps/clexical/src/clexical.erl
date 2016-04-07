@@ -5,7 +5,7 @@
 
 %% gen_server callbacks
 -export([
-    start_link/2,
+    start_link/3,
     stop/0,
     init/1,
     handle_call/3,
@@ -15,35 +15,46 @@
     code_change/3
 ]).
 
-%% API Methods
+%% API Functions
 -export([
-    fresh_id/0
+    fresh_id/0,
+    process/2    
 ]).
 
-start_link(_, _) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link(Parser, Runner, Hanger) ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [Parser, Runner, Hanger], []).
 
 stop() ->
     gen_server:call(?MODULE, stop).
 
-init(_Params) ->
+init([Parser, Runner, Hanger]) ->
     lager:info(?LOGO,[]),
-    {ok, #state{}}.
+    {ok, #state{parser=Parser, runner=Runner, hanger=Hanger}}.
 
 handle_info(Record, State) ->
     lager:debug("Unknown Info Request: ~p~n", [Record]),
     {noreply, State}.
 
+handle_cast(#predicate{}=P, State) ->
+    lager:debug("Cast Predicate: ~p~n", [P]),
+    spawn(?MODULE, process, [[P], State]),
+    {noreply, State};
 handle_cast(_Msg, State) ->
     lager:debug("Received Cast: ~p~n", [_Msg]),
     {noreply, State}.
 
 handle_call(fresh_id, _From, #state{lastid=LID}=State) ->
     ID = LID + 1,
-    {reply, ID, State#state{lastid=ID}};
-handle_call({submit, #node{}=Node}, _From, _State) ->
-    submit(Node),
-    {reply, ok, _State};
+    {reply, erlang:integer_to_binary(ID), State#state{lastid=ID}};
+handle_call({submit, Script}, _From, #state{parser=Parser}=State) when is_binary(Script) ->
+    Result = case Parser:from_binary(Script) of
+        [#predicate{}|_]=Predicates ->
+            gen_server:abcast(?MODULE, Predicates),
+            ok;
+        _ ->
+            error
+    end,
+    {reply, Result, State};
 handle_call(Info, _From, _State) ->
     lager:info("Received Call: ~p~n", [Info]),
     {reply, ok, _State}.
@@ -55,8 +66,25 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-submit(#node{context=_Context, id=_ID, elem=_Elem}) ->
+%% Clexical Functions
+
+process([#predicate{action={adverb,_}}=P|T], State) ->
+    pend(P, State),
+    process(T, State);
+process([#predicate{action={verb,_}}=P|T], State) ->    
+    execute(P#predicate{id=fresh_id()}, State),
+    process(T, State);
+process(_, _) ->
     ok.
+
+execute(#predicate{content=Content, action=Action}=P, #state{runner=Runner}=State) ->    
+    process(Content, State),
+    lager:debug("Executing [~p] ~n", [Action]),
+    Runner:run(P).
+
+pend(#predicate{action=Action}=P, #state{hanger=Hanger}=_State) ->
+    lager:debug("Pending [~p] ~n", [Action]),
+    Hanger:hang(P).
 
 fresh_id() ->
     gen_server:call(clexical, fresh_id).
