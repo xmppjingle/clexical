@@ -24,14 +24,16 @@ end).
 	to_binary/1	
 	]).
 
-kin_from_predicate(#predicate{}) ->
-	[].
+kin_from_predicate(#predicate{abstract=Abstract}) ->
+	Kin = exmpp_xml:get_child_elements(Abstract),
+	lists:map(fun(Elem) -> predicate_from_elem(Elem) end, Kin).
 
 predicates_from_binary(Bin) ->
 	case ?Parse(Bin) of
-		[Elem|_] ->
+		{xmlel,_,_,_,_,_} = Elem ->
 			[predicate_from_elem(Elem)];
-		_ -> []
+		_R ->
+			[]
 	end.
 
 to_binary(#predicate{abstract=Elem}) ->
@@ -41,11 +43,20 @@ predicate_from_elem({xmlel, _, _, Name, Attribs, _Children}=E) ->
 	ID = exmpp_xml:get_attribute(E, <<"id">>, undefined),
 	Subject = exmpp_xml:get_attribute(E, <<"subject">>, undefined),
 	Adjectives = dict_from_attribs(Attribs),
-	#predicate{id=ID, subject=Subject, action={verb, erlang:atom_to_binary(Name, ?ENCODE)}, adjectives=Adjectives, abstract=E}.
+	ActionName = erlang:atom_to_binary(Name, ?ENCODE),
+	#predicate{id=ID, subject=Subject, action={get_kind(ActionName), ActionName}, adjectives=Adjectives, abstract=E}.
 
 dict_from_attribs(Attribs) ->
-	lists:foldl(fun({xmlattr, _, K, V}, Dict)-> dict:append(K, V, Dict) end, dict:new(), Attribs).
+	lists:foldl(fun({xmlattr, _, K, V}, Dict)-> case K of <<"id">> -> Dict; <<"subject">> -> Dict; _ -> dict:append(K, V, Dict) end end, dict:new(), Attribs).
 % 	dict_from_attribs_(Attribs, dict:new()).
 % dict_from_attribs_([], Dict) ->
 % 	Dict;
 % dict_from_attribs_([{xmlattr, _, Name, Value}|T], Dict) ->
+
+get_kind(Name) ->
+    case Name of
+        <<"on",_/binary>> ->
+            adverb;
+        _ ->
+            verb
+    end.

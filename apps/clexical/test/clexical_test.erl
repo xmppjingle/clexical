@@ -40,8 +40,8 @@ end_per_suite(_Config) ->
     ok.
 
 single_execution() ->
-	P = #predicate{id= <<"1">>, subject= <<"set">>, abstract=[], action={verb, <<"offer">>}},
-	gen_server:abcast(clexical, P),
+    Bin = <<"<offer id='1' subject='bestbuy' good='case'><onPurchase><celebrate/></onPurchase></offer>">>,
+	gen_server:call(clexical, {submit, Bin}),
     timer:sleep(500),
 	?_assert(true).
 

@@ -21,6 +21,15 @@ end).
     end    
 end).
 
+-define(start_exmpp(), begin
+    case lists:keyfind(redo, 1, application:loaded_applications()) of
+        false ->
+            redo:start_link();
+        _ ->
+            ok
+    end    
+end).
+
 -define(meck_confetti(Config), begin
     case whereis(confetti) of
         undefined ->

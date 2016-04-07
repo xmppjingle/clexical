@@ -35,9 +35,9 @@ handle_info(Record, State) ->
     lager:debug("Unknown Info Request: ~p~n", [Record]),
     {noreply, State}.
 
-handle_cast(#predicate{}=P, State) ->
+handle_cast([#predicate{}|_]=P, State) ->
     lager:debug("Cast Predicate: ~p~n", [P]),
-    spawn(?MODULE, process, [[P], State]),
+    spawn(?MODULE, process, [P, State]),
     {noreply, State};
 handle_cast(_Msg, State) ->
     lager:debug("Received Cast: ~p~n", [_Msg]),
