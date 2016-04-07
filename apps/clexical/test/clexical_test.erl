@@ -40,7 +40,7 @@ end_per_suite(_Config) ->
     ok.
 
 single_execution() ->
-	P = #predicate{id= <<"1">>, subject= <<"set">>, content=[#predicate{id= <<"1">>, subject= <<"set">>, content=[], action={adverb, purchased}}], action={verb, offer}},
+	P = #predicate{id= <<"1">>, subject= <<"set">>, content=[#predicate{id= <<"1">>, subject= <<"set">>, content=[], action={adverb, <<"purchased">>}}], action={verb, <<"offer">>}},
 	gen_server:abcast(clexical, P),
     timer:sleep(500),
 	?_assert(true).
@@ -49,6 +49,9 @@ run(P) ->
 	lager:debug("Test Runner: ~p~n", [P]),
 	ok.
 
-hang(P) ->
-    lager:debug("Test Hang: ~p~n", [P]),
+hang(K, V) ->
+    lager:debug("Test Hang: ~p -> ~p~n", [K, V]),
     ok.
+
+to_binary(_P) ->
+    <<"data">>.

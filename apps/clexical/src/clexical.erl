@@ -68,8 +68,8 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% Clexical Functions
 
-process([#predicate{action={adverb,_}}=P|T], State) ->
-    pend(P, State),
+process([#predicate{action={adverb,_}}=P|T],  #state{last_predicate=#predicate{id=ID, subject=Subject}}=State) ->
+    pend(P#predicate{id=ID, subject=Subject}, State),
     process(T, State);
 process([#predicate{action={verb,_}}=P|T], State) ->    
     execute(P#predicate{id=fresh_id()}, State),
@@ -78,13 +78,24 @@ process(_, _) ->
     ok.
 
 execute(#predicate{content=Content, action=Action}=P, #state{runner=Runner}=State) ->    
-    process(Content, State),
+    process(Content, State#state{last_predicate=P}),
     lager:debug("Executing [~p] ~n", [Action]),
     Runner:run(P).
 
-pend(#predicate{action=Action}=P, #state{hanger=Hanger}=_State) ->
+pend(#predicate{action=Action}=P, #state{hanger=Hanger, parser=Parser}=_State) ->
     lager:debug("Pending [~p] ~n", [Action]),
-    Hanger:hang(P).
+    Key = compose_key(P),
+    Value = Parser:to_binary(P),
+    Hanger:hang(Key, Value).
+
+compose_key(#predicate{adjectives={dict, _, _, _, _, _, _, _, _}=Dict}=P) ->
+    BareKey = compose_key(P#predicate{adjectives=[]}),
+    Suffix = dict:fold(fun(_K, V, A) -> A ++ V end, <<>>, Dict),
+    <<BareKey/binary, Suffix/binary>>;
+compose_key(#predicate{action={_,Name}, subject=Subject, id=ID}) ->
+    <<Subject/binary, ID/binary, Name/binary>>;
+compose_key(_) ->
+    <<>>.    
 
 fresh_id() ->
     gen_server:call(clexical, fresh_id).
