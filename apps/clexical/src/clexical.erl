@@ -47,7 +47,7 @@ handle_call(fresh_id, _From, #state{lastid=LID}=State) ->
     ID = LID + 1,
     {reply, erlang:integer_to_binary(ID), State#state{lastid=ID}};
 handle_call({submit, Script}, _From, #state{parser=Parser}=State) when is_binary(Script) ->
-    Result = case Parser:from_binary(Script) of
+    Result = case Parser:predicates_from_binary(Script) of
         [#predicate{}|_]=Predicates ->
             gen_server:abcast(?MODULE, Predicates),
             ok;
@@ -77,8 +77,9 @@ process([#predicate{action={verb,_}}=P|T], State) ->
 process(_, _) ->
     ok.
 
-execute(#predicate{content=Content, action=Action}=P, #state{runner=Runner}=State) ->    
-    process(Content, State#state{last_predicate=P}),
+execute(#predicate{action=Action}=P, #state{runner=Runner, parser=Parser}=State) ->
+    Predicates = Parser:kin_from_predicate(P),
+    process(Predicates, State#state{last_predicate=P}),
     lager:debug("Executing [~p] ~n", [Action]),
     Runner:run(P).
 

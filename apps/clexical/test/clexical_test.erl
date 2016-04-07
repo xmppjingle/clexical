@@ -8,7 +8,7 @@
         {redis_host, "localhost"},
         {redis_port, 6379},
         {runner, ?MODULE},
-        {parser, ?MODULE},
+        {parser, xml_parser},
       	{hanger, ?MODULE}
     ]}
 ]).
@@ -40,7 +40,7 @@ end_per_suite(_Config) ->
     ok.
 
 single_execution() ->
-	P = #predicate{id= <<"1">>, subject= <<"set">>, content=[#predicate{id= <<"1">>, subject= <<"set">>, content=[], action={adverb, <<"purchased">>}}], action={verb, <<"offer">>}},
+	P = #predicate{id= <<"1">>, subject= <<"set">>, abstract=[], action={verb, <<"offer">>}},
 	gen_server:abcast(clexical, P),
     timer:sleep(500),
 	?_assert(true).

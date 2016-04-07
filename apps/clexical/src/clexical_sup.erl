@@ -11,7 +11,6 @@
 %% Helper macro for declaring children of supervisor
 -define(CHILD(I, Args), {I, {I, start_link, Args}, permanent, 5000, worker, [I]}).
 
-
 %% ===================================================================
 %% API functions
 %% ===================================================================
