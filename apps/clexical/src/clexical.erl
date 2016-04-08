@@ -46,8 +46,8 @@ handle_cast(_Msg, State) ->
 handle_call(fresh_id, _From, #state{lastid=LID}=State) ->
     ID = LID + 1,
     {reply, erlang:integer_to_binary(ID), State#state{lastid=ID}};
-handle_call({submit, Script}, _From, #state{parser=Parser}=State) when is_binary(Script) ->
-    Result = case Parser:predicates_from_binary(Script) of
+handle_call({recite, Letter}, _From, #state{parser=Parser}=State) when is_binary(Letter) ->
+    Result = case Parser:predicates_from_binary(Letter) of
         [#predicate{}|_]=Predicates ->
             gen_server:abcast(?MODULE, Predicates),
             ok;

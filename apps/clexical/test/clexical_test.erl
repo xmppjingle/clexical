@@ -41,7 +41,7 @@ end_per_suite(_Config) ->
 
 single_execution() ->
     Bin = <<"<offer id='1' subject='bestbuy' good='case'><onPurchase><celebrate/></onPurchase></offer>">>,
-	gen_server:call(clexical, {submit, Bin}),
+	gen_server:call(clexical, {recite, Bin}),
     timer:sleep(500),
 	?_assert(true).
 
