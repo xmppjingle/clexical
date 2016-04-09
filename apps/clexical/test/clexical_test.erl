@@ -1,5 +1,11 @@
 -module(clexical_test).
--compile([export_all]).
+-behaviour(herold).
+
+-export([
+    proclaim/1,
+    read_excerpt/1,
+    curb/2
+    ]).
 
 -include("../include/clexical_test.hrl").
 
@@ -7,10 +13,8 @@
     {clexical, [
         {redis_host, "localhost"},
         {redis_port, 6379},
-        {runner, ?MODULE},
-        {parser, xml_parser},
-      	{hanger, ?MODULE}
-    ]}
+        {herald, ?MODULE}
+        ]}
 ]).
 
 setup_test_() ->
@@ -19,10 +23,8 @@ setup_test_() ->
     ?start_redo(),
     [Conf] = confetti:fetch(mgmt_conf),
     ClexiCfg = proplists:get_value(clexical, Conf, []),
-    Parser = proplists:get_value(parser, ClexiCfg),
-    Runner = proplists:get_value(runner, ClexiCfg),
-    Hanger = proplists:get_value(hanger, ClexiCfg),
-    {ok, _} = clexical:start_link(Parser, Runner, Hanger),
+    Herald = proplists:get_value(herald, ClexiCfg),
+    {ok, _} = clexical:start_link(Herald),
 
     {setup,
         spawn,
@@ -40,18 +42,19 @@ end_per_suite(_Config) ->
     ok.
 
 single_execution() ->
-    Bin = <<"<offer id='1' subject='bestbuy' good='case'><onPurchase><celebrate/></onPurchase></offer>">>,
-	gen_server:call(clexical, {recite, Bin}),
+    Letter= #letter{predicates=[#predicate{id= <<"1">>, subject= <<"set">>, abstract=[#predicate{id= <<"1">>, subject= <<"set">>, abstract=[], action={adverb, purchased}}], action={verb, offer}}]},
+	gen_server:call(clexical, {recite, Letter}),
     timer:sleep(500),
 	?_assert(true).
 
-run(P) ->
-	lager:debug("Test Runner: ~p~n", [P]),
+proclaim(P) ->
+	lager:debug("Test proclaim: ~p~n", [P]),
 	ok.
 
-hang(K, V) ->
-    lager:debug("Test Hang: ~p -> ~p~n", [K, V]),
+curb(K, V) ->
+    lager:debug("Test remark: ~p -> ~p~n", [K, V]),
     ok.
 
-to_binary(_P) ->
-    <<"data">>.
+read_excerpt(#predicate{abstract=E}) ->
+    lager:debug("Test Read Excerpt: ~p ~n", [E]),
+    #letter{predicates=E}.

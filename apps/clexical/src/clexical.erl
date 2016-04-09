@@ -5,7 +5,7 @@
 
 %% gen_server callbacks
 -export([
-    start_link/3,
+    start_link/1,
     stop/0,
     init/1,
     handle_call/3,
@@ -18,27 +18,23 @@
 %% API Functions
 -export([
     fresh_id/0,
-    process/2    
+    pronounce/2    
 ]).
 
-start_link(Parser, Runner, Hanger) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [Parser, Runner, Hanger], []).
+start_link(Herald) ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [Herald], []).
 
 stop() ->
     gen_server:call(?MODULE, stop).
 
-init([Parser, Runner, Hanger]) ->
+init([Herald]) ->
     lager:info(?LOGO,[]),
-    {ok, #state{parser=Parser, runner=Runner, hanger=Hanger}}.
+    {ok, #state{herald=Herald}}.
 
 handle_info(Record, State) ->
     lager:debug("Unknown Info Request: ~p~n", [Record]),
     {noreply, State}.
 
-handle_cast([#predicate{}|_]=P, State) ->
-    lager:debug("Cast Predicate: ~p~n", [P]),
-    spawn(?MODULE, process, [P, State]),
-    {noreply, State};
 handle_cast(_Msg, State) ->
     lager:debug("Received Cast: ~p~n", [_Msg]),
     {noreply, State}.
@@ -46,15 +42,10 @@ handle_cast(_Msg, State) ->
 handle_call(fresh_id, _From, #state{lastid=LID}=State) ->
     ID = LID + 1,
     {reply, erlang:integer_to_binary(ID), State#state{lastid=ID}};
-handle_call({recite, Letter}, _From, #state{parser=Parser}=State) when is_binary(Letter) ->
-    Result = case Parser:predicates_from_binary(Letter) of
-        [#predicate{}|_]=Predicates ->
-            gen_server:abcast(?MODULE, Predicates),
-            ok;
-        _ ->
-            error
-    end,
-    {reply, Result, State};
+handle_call({recite, #letter{}=Letter}, _From, State) ->
+    lager:info("Received Letter: ~p~n", [Letter]),
+    spawn(?MODULE, pronounce, [Letter, State]),
+    {reply, ok, State};
 handle_call(Info, _From, _State) ->
     lager:info("Received Call: ~p~n", [Info]),
     {reply, ok, _State}.
@@ -67,36 +58,41 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 %% Clexical Functions
-
-process([#predicate{action={adverb,_}}=P|T],  #state{last_predicate=#predicate{id=ID, subject=Subject}}=State) ->
-    pend(P#predicate{id=ID, subject=Subject}, State),
-    process(T, State);
-process([#predicate{action={verb,_}}=P|T], State) ->    
-    execute(P#predicate{id=fresh_id()}, State),
-    process(T, State);
-process(_, _) ->
+-spec pronounce(#letter{}, #state{}) -> any().
+pronounce(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter,  #state{last_predicate=#predicate{id=ID, subject=Subject}}=State) ->
+    refrain(P#predicate{id=ID, subject=Subject}, State),
+    pronounce(Letter#letter{predicates=T}, State);
+pronounce(#letter{predicates=[#predicate{action={verb,_}}=P|T]}=Letter, State) ->    
+    say(P#predicate{id=fresh_id()}, State),
+    pronounce(Letter#letter{predicates=T}, State);
+pronounce(_, _) ->
+    % Empty Minded
     ok.
 
-execute(#predicate{action=Action}=P, #state{runner=Runner, parser=Parser}=State) ->
-    Predicates = Parser:kin_from_predicate(P),
-    process(Predicates, State#state{last_predicate=P}),
-    lager:debug("Executing [~p] ~n", [Action]),
-    Runner:run(P).
+-spec say(#predicate{}, #state{}) -> any().
+say(#predicate{}=P, #state{herald=Herald}=State) ->
+    lager:info("Say: ~p~n", [P]),
+    pronounce(Herald:read_excerpt(P), State#state{last_predicate=P}),
+    Herald:proclaim(P).
 
-pend(#predicate{action=Action}=P, #state{hanger=Hanger, parser=Parser}=_State) ->
-    lager:debug("Pending [~p] ~n", [Action]),
+-spec refrain(#predicate{}, #state{}) -> any().
+refrain(#predicate{}=P, #state{herald=Herald}=_State) ->
+    lager:debug("Refrain: ~p ~n", [P]),
     Key = compose_key(P),
-    Value = Parser:to_binary(P),
-    Hanger:hang(Key, Value).
+    Herald:curb(Key, P).
 
+% Utils Functions
+-spec fresh_id() -> binary().
+fresh_id() ->
+    gen_server:call(clexical, fresh_id).
+
+-spec compose_key(#predicate{}) -> binary().
 compose_key(#predicate{adjectives={dict, _, _, _, _, _, _, _, _}=Dict}=P) ->
     BareKey = compose_key(P#predicate{adjectives=[]}),
     Suffix = dict:fold(fun(_K, V, A) -> A ++ V end, <<>>, Dict),
     <<BareKey/binary, Suffix/binary>>;
 compose_key(#predicate{action={_,Name}, subject=Subject, id=ID}) ->
-    <<Subject/binary, ID/binary, Name/binary>>;
+    BName=erlang:atom_to_binary(Name, utf8),
+    <<Subject/binary, ID/binary, BName/binary>>;
 compose_key(_) ->
     <<>>.    
-
-fresh_id() ->
-    gen_server:call(clexical, fresh_id).

@@ -1,5 +1,4 @@
 -module(xml_parser).
--behaviour(clexical_parser).
 
 -include("../include/clexical.hrl").
 -include_lib("exmpp/include/exmpp.hrl").
@@ -48,10 +47,6 @@ predicate_from_elem({xmlel, _, _, Name, Attribs, _Children}=E) ->
 
 dict_from_attribs(Attribs) ->
 	lists:foldl(fun({xmlattr, _, K, V}, Dict)-> case K of <<"id">> -> Dict; <<"subject">> -> Dict; _ -> dict:append(K, V, Dict) end end, dict:new(), Attribs).
-% 	dict_from_attribs_(Attribs, dict:new()).
-% dict_from_attribs_([], Dict) ->
-% 	Dict;
-% dict_from_attribs_([{xmlattr, _, Name, Value}|T], Dict) ->
 
 get_kind(Name) ->
     case Name of
