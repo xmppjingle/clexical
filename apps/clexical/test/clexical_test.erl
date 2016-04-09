@@ -4,7 +4,8 @@
 -export([
     proclaim/1,
     read_excerpt/1,
-    curb/2
+    curb/2,
+    recall/1
     ]).
 
 -include("../include/clexical_test.hrl").
@@ -16,6 +17,8 @@
         {herald, ?MODULE}
         ]}
 ]).
+
+-define(PRED(ID,SUB,ACT,ABS), #predicate{id= <<ID>>, subject= <<SUB>>, action=ACT, abstract=ABS}).
 
 setup_test_() ->
     ?meck_confetti([?CONFIG]),
@@ -42,9 +45,12 @@ end_per_suite(_Config) ->
     ok.
 
 single_execution() ->
-    Letter= #letter{predicates=[#predicate{id= <<"1">>, subject= <<"set">>, abstract=[#predicate{id= <<"1">>, subject= <<"set">>, abstract=[], action={adverb, purchased}}], action={verb, offer}}]},
+    News = #letter{predicates=[?PRED("1","set",{adverb, purchased},[])]},
+    lager:debug("News: ~p~n", [News]),
+    Letter= #letter{predicates=[?PRED("1","set",{verb, offer},[?PRED("1","set",{adverb, purchased},[?PRED("1","set",{verb, celleb},[])])])]},
 	gen_server:call(clexical, {recite, Letter}),
     timer:sleep(500),
+    gen_server:call(clexical, {attend, News}),
 	?_assert(true).
 
 proclaim(P) ->
@@ -54,6 +60,11 @@ proclaim(P) ->
 curb(K, V) ->
     lager:debug("Test remark: ~p -> ~p~n", [K, V]),
     ok.
+
+recall(K) ->
+    V=?PRED("1","set",{adverb, purchased},[?PRED("1","set",{verb, celleb},[])]),
+    lager:debug("Test recall: ~p -> ~p~n", [K, V]),
+    V.
 
 read_excerpt(#predicate{abstract=E}) ->
     lager:debug("Test Read Excerpt: ~p ~n", [E]),

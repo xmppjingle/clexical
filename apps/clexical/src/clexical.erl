@@ -18,7 +18,8 @@
 %% API Functions
 -export([
     fresh_id/0,
-    pronounce/2    
+    pronounce/2,
+    hear/2
 ]).
 
 start_link(Herald) ->
@@ -43,8 +44,12 @@ handle_call(fresh_id, _From, #state{lastid=LID}=State) ->
     ID = LID + 1,
     {reply, erlang:integer_to_binary(ID), State#state{lastid=ID}};
 handle_call({recite, #letter{}=Letter}, _From, State) ->
-    lager:info("Received Letter: ~p~n", [Letter]),
+    lager:info("Recite Letter: ~p~n", [Letter]),
     spawn(?MODULE, pronounce, [Letter, State]),
+    {reply, ok, State};
+handle_call({attend, #letter{}=Letter}, _From, State) ->
+    lager:info("Hear Letter: ~p~n", [Letter]),
+    spawn(?MODULE, hear, [Letter, State]),
     {reply, ok, State};
 handle_call(Info, _From, _State) ->
     lager:info("Received Call: ~p~n", [Info]),
@@ -66,8 +71,7 @@ pronounce(#letter{predicates=[#predicate{action={verb,_}}=P|T]}=Letter, State) -
     say(P#predicate{id=fresh_id()}, State),
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(_, _) ->
-    % Empty Minded
-    ok.
+    ok. % Empty Minded
 
 -spec say(#predicate{}, #state{}) -> any().
 say(#predicate{}=P, #state{herald=Herald}=State) ->
@@ -80,6 +84,15 @@ refrain(#predicate{}=P, #state{herald=Herald}=_State) ->
     lager:debug("Refrain: ~p ~n", [P]),
     Key = compose_key(P),
     Herald:curb(Key, P).
+
+-spec hear(#letter{}, #state{}) -> any().
+hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter, #state{herald=Herald}=State) ->
+    lager:debug("Hear: ~p ~n", [P]),
+    Excerpt = Herald:read_excerpt(Herald:recall(compose_key(P))),
+    pronounce(Excerpt, State),
+    hear(Letter#letter{predicates=T}, State);
+hear(_, _) ->    
+    ok. % We don't take actions based on what we hear
 
 % Utils Functions
 -spec fresh_id() -> binary().
