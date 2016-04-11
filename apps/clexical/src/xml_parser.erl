@@ -1,4 +1,5 @@
 -module(xml_parser).
+-behavior(clexical_parser).
 
 -include("../include/clexical.hrl").
 -include_lib("exmpp/include/exmpp.hrl").
@@ -18,12 +19,12 @@ end).
 
 %% API
 -export([
-	kin_from_predicate/1,
+	excerpt_from_predicate/1,
 	predicates_from_binary/1,
 	to_binary/1	
 	]).
 
-kin_from_predicate(#predicate{abstract=Abstract}) ->
+excerpt_from_predicate(#predicate{abstract=Abstract}) ->
 	Kin = exmpp_xml:get_child_elements(Abstract),
 	lists:map(fun(Elem) -> predicate_from_elem(Elem) end, Kin).
 

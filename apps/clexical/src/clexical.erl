@@ -19,7 +19,8 @@
 -export([
     fresh_id/0,
     pronounce/2,
-    hear/2
+    hear/2,
+    compose_key/1
 ]).
 
 start_link(Herald) ->

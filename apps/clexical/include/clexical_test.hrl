@@ -2,6 +2,8 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("confetti/include/confetti.hrl").
 
+-define(PRED(ID,SUB,ACT,ABS), #predicate{id= <<ID>>, subject= <<SUB>>, action=ACT, abstract=ABS}).
+
 -define(start_lager(), begin
     case lists:keyfind(lager, 1, application:loaded_applications()) of
         false ->

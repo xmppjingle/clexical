@@ -1,5 +1,5 @@
 -module(clexical_test).
--behaviour(herold).
+-behaviour(herald).
 
 -export([
     proclaim/1,
@@ -17,8 +17,6 @@
         {herald, ?MODULE}
         ]}
 ]).
-
--define(PRED(ID,SUB,ACT,ABS), #predicate{id= <<ID>>, subject= <<SUB>>, action=ACT, abstract=ABS}).
 
 setup_test_() ->
     ?meck_confetti([?CONFIG]),

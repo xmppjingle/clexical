@@ -1,4 +1,4 @@
--module(herold).
+-module(herald).
 -include("../include/clexical.hrl").
 
 -callback curb(Key :: binary(), P :: #predicate{}) -> ok|error.

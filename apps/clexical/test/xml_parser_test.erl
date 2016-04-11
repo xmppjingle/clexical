@@ -26,8 +26,6 @@ end_per_suite(_Config) ->
 basic_parse_test_() ->
     Bin = <<"<offer id='1' subject='bestbuy' good='case'><onPurchase><celebrate/></onPurchase></offer>">>,
     [P] = xml_parser:predicates_from_binary(Bin),
-    % lager:debug("PfB: ~p~n", [P]),
     ?_assert(P /= undefined),
-    K = xml_parser:kin_from_predicate(P),
-    % lager:debug("KfP: ~p~n", [K]),
+    K = xml_parser:excerpt_from_predicate(P),
     ?_assert(P /= undefined).
