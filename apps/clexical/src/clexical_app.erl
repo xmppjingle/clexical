@@ -14,25 +14,10 @@ start(_StartType, _StartArgs) ->
     Config = proplists:get_value(clexical, Conf, []),
     RedisOpts = redis_opts(Config),
     Herald = proplists:get_value(herald, Config),
-    init_cowboy(Herald),
     clexical_sup:start_link([[Herald], [RedisOpts]]).
 
 stop(_State) ->
     ok.
-
-init_cowboy(Herald) ->
-    Dispatch =
-        cowboy_router:compile([{
-            '_', % Host
-            [
-            {"/clexical", Herald, []}
-            ] % Paths
-        }]),
-    Port = 9999,
-    Listeners = 10,
-    Timeout = 500,
-    {ok, _} = cowboy:start_http(http, Listeners, [{port, Port}],
-        [{env, [{dispatch, Dispatch}]}, {timeout, Timeout}]).
 
 redis_opts(Config) ->
     Host = proplists:get_value(redis_host, Config),
