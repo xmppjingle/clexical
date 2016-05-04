@@ -26,11 +26,11 @@ start() ->
       ]}  
     ]),  
     {ok, _} = cowboy:start_http(http, 100, [{port, 8081}],  
-        [{env, [{dispatch, Dispatch}]}]).
+        [{env, [{dispatch, Dispatch}]}]),
+    mnesia_mind:init().
 
 init({tcp, http}, _Req, _Opts) ->
 	{upgrade, protocol, cowboy_websocket}.
-
 
 % Herald Functions
 
@@ -42,9 +42,11 @@ read_excerpt(#predicate{}=P) ->
 	xml_parser:excerpt_from_predicate(P).
 
 curb(Seal, #predicate{}=P) ->
+	lager:info("Curb: [~p] ~p~n", [Seal, P]),
 	mnesia_mind:bear(Seal, P).
 
 recall(Seal) ->
+	lager:info("Recall: [~p] ~n", [Seal]),
 	mnesia_mind:recollect(Seal).
 
 % WebSocket Functions
@@ -52,10 +54,19 @@ websocket_init(_TransportName, Req, _Opts) ->
 	{ok, Req, undefined_state}.
 
 websocket_handle({text, Msg}, Req, State) ->
-	PS = xml_parser:predicates_from_binary(Msg),
-	lager:info("Received Predicates: ~n ~p~n", [PS]),
-	gen_server:call(clexical, {recite, #letter{predicates=PS}}),
-	{reply, {text, <<"<OK/>">>}, Req, State};
+	Letter = xml_parser:letter_from_binary(Msg),
+	lager:info("Received Letter: ~n ~p~n", [Letter]),
+	case Letter of
+		#letter{type = decree} -> 
+			gen_server:call(clexical, {recite, Letter}),
+			Reply = <<"<OK/>">>;
+		#letter{type = bulletin} -> 
+			gen_server:call(clexical, {attend, Letter}),
+			Reply = <<"<OK/>">>;
+		_ ->
+			Reply = <<"<Error/>">>
+	end,
+	{reply, {text, Reply}, Req, State};
 websocket_handle(_Data, Req, State) ->
 	{ok, Req, State}.
 

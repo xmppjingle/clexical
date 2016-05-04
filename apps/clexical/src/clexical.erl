@@ -65,11 +65,21 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% Clexical Functions
 -spec pronounce(#letter{}, #state{}) -> any().
-pronounce(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter,  #state{last_predicate=#predicate{id=ID, subject=Subject}}=State) ->
-    refrain(P#predicate{id=ID, subject=Subject}, State),
+pronounce(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter,  #state{last_predicate=LP}=State) ->
+    case LP of
+        #predicate{id=ID, subject=Subject} ->
+            refrain(P#predicate{id=ID, subject=Subject}, State);
+        _ ->
+            refrain(P#predicate{id=fresh_id()}, State)
+    end,
     pronounce(Letter#letter{predicates=T}, State);
-pronounce(#letter{predicates=[#predicate{action={verb,_}}=P|T]}=Letter, State) ->    
-    say(P#predicate{id=fresh_id()}, State),
+pronounce(#letter{predicates=[#predicate{action={verb,_},id=ID}=P|T]}=Letter, State) ->    
+        case ID of
+            <<>> ->
+                say(P#predicate{id=fresh_id()}, State);
+            _ ->
+                say(P, State)
+    end,
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(_, _) ->
     ok. % Empty Minded
@@ -82,13 +92,13 @@ say(#predicate{}=P, #state{herald=Herald}=State) ->
 
 -spec refrain(#predicate{}, #state{}) -> any().
 refrain(#predicate{}=P, #state{herald=Herald}=_State) ->
-    lager:debug("Refrain: ~p ~n", [P]),
+    lager:info("Refrain: ~p ~n", [P]),
     Key = compose_key(P),
     Herald:curb(Key, P).
 
 -spec hear(#letter{}, #state{}) -> any().
 hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter, #state{herald=Herald}=State) ->
-    lager:debug("Hear: ~p ~n", [P]),
+    lager:info("Hear: ~p ~n", [P]),
     Excerpt = Herald:read_excerpt(Herald:recall(compose_key(P))),
     pronounce(Excerpt, State),
     hear(Letter#letter{predicates=T}, State);
@@ -103,10 +113,9 @@ fresh_id() ->
 -spec compose_key(#predicate{}) -> binary().
 compose_key(#predicate{adjectives={dict, _, _, _, _, _, _, _, _}=Dict}=P) ->
     BareKey = compose_key(P#predicate{adjectives=[]}),
-    Suffix = dict:fold(fun(_K, V, A) -> A ++ V end, <<>>, Dict),
+    Suffix = dict:fold(fun(_K, V, A) -> <<A/binary, V/binary>> end, <<>>, Dict),
     <<BareKey/binary, Suffix/binary>>;
-compose_key(#predicate{action={_,Name}, subject=Subject, id=ID}) ->
-    BName=erlang:atom_to_binary(Name, utf8),
+compose_key(#predicate{action={_,BName}, subject=Subject, id=ID}) ->
     <<Subject/binary, ID/binary, BName/binary>>;
 compose_key(_) ->
     <<>>.    

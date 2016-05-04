@@ -20,28 +20,31 @@ end).
 %% API
 -export([
 	excerpt_from_predicate/1,
-	predicates_from_binary/1,
+	letter_from_binary/1,
 	to_binary/1	
 	]).
 
 excerpt_from_predicate(#predicate{abstract=Abstract}) ->
 	Kin = exmpp_xml:get_child_elements(Abstract),
-	lists:map(fun(Elem) -> predicate_from_elem(Elem) end, Kin).
+	P = lists:map(fun(Elem) -> predicate_from_elem(Elem) end, Kin),
+	#letter{predicates=P}.
 
-predicates_from_binary(Bin) ->
+letter_from_binary(Bin) ->
 	case ?Parse(Bin) of
-		{xmlel,_,_,_,_,_} = Elem ->
-			[predicate_from_elem(Elem)];
+		{xmlel,_,_,Type,_,Children} = Elem ->
+			P = lists:map(fun(E) -> predicate_from_elem(E) end, Children),
+			#letter{type=Type, predicates=P, sender=exmpp_xml:get_attribute(Elem, <<"sender">>, <<"anonymous">>)};
 		_R ->
-			[]
+			lager:info("Invalid Letter Type: ~p ~n", [_R]),
+			undefined
 	end.
 
 to_binary(#predicate{abstract=Elem}) ->
 	exmpp_xml:document_to_binary(Elem).
 
 predicate_from_elem({xmlel, _, _, Name, Attribs, _Children}=E) ->
-	ID = exmpp_xml:get_attribute(E, <<"id">>, undefined),
-	Subject = exmpp_xml:get_attribute(E, <<"subject">>, undefined),
+	ID = exmpp_xml:get_attribute(E, <<"id">>, <<>>),
+	Subject = exmpp_xml:get_attribute(E, <<"subject">>, <<>>),
 	Adjectives = dict_from_attribs(Attribs),
 	ActionName = erlang:atom_to_binary(Name, ?ENCODE),
 	#predicate{id=ID, subject=Subject, action={get_kind(ActionName), ActionName}, adjectives=Adjectives, abstract=E}.

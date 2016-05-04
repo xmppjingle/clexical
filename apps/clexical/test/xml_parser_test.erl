@@ -25,7 +25,8 @@ end_per_suite(_Config) ->
 
 basic_parse_test_() ->
     Bin = <<"<offer id='1' subject='bestbuy' good='case'><onPurchase><celebrate/></onPurchase></offer>">>,
-    [P] = xml_parser:predicates_from_binary(Bin),
-    ?_assert(P /= undefined),
+    L = xml_parser:letter_from_binary(Bin),
+    ?_assert(L /= undefined),
+    [P|_] = L#letter.predicates, 
     K = xml_parser:excerpt_from_predicate(P),
-    ?_assert(P /= undefined).
+    ?_assert(K /= undefined).

@@ -43,9 +43,9 @@ end_per_suite(_Config) ->
     ok.
 
 single_execution() ->
-    News = #letter{predicates=[?PRED("1","set",{adverb, purchased},[])]},
+    News = #letter{predicates=[?PRED("1","set",{adverb, <<"purchased">>},[])]},
     lager:debug("News: ~p~n", [News]),
-    Letter= #letter{predicates=[?PRED("1","set",{verb, offer},[?PRED("1","set",{adverb, purchased},[?PRED("1","set",{verb, celleb},[])])])]},
+    Letter= #letter{predicates=[?PRED("1","set",{verb, <<"offer">>},[?PRED("1","set",{adverb, <<"purchased">>},[?PRED("1","set",{verb, <<"celleb">>},[])])])]},
 	gen_server:call(clexical, {recite, Letter}),
     timer:sleep(500),
     gen_server:call(clexical, {attend, News}),
@@ -60,7 +60,7 @@ curb(K, V) ->
     ok.
 
 recall(K) ->
-    V=?PRED("1","set",{adverb, purchased},[?PRED("1","set",{verb, celleb},[])]),
+    V=?PRED("1","set",{adverb, purchased},[?PRED("1","set",{verb, <<"celleb">>},[])]),
     lager:debug("Test recall: ~p -> ~p~n", [K, V]),
     V.
 
