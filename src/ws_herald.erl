@@ -18,14 +18,14 @@
     recall/1
     ]).
 
-start() ->
+start(Port) ->
 	Dispatch = cowboy_router:compile([  
       {'_', [  
         {"/", cowboy_static, {priv_file, clexical, "index.html"}},
-        {"/websocket", ws_herald, []}  
+        {"/websocket", ws_herald, []}
       ]}  
     ]),  
-    {ok, _} = cowboy:start_http(http, 100, [{port, 8081}],  
+    {ok, _} = cowboy:start_http(http, 100, [{port, Port}],  
         [{env, [{dispatch, Dispatch}]}]),
     mnesia_mind:init().
 
