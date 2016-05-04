@@ -1,10 +1,5 @@
 *~
-.DS_Store
 .eunit
-/.rebar*
-.rebar*
-_build/*
-*erlcinfo
 deps
 *.o
 *.beam
@@ -12,11 +7,11 @@ deps
 *.log
 *.html
 *.dump
-ebin
+ebin/
 test/ct_run.*
 test/variables-*
-rel/clexical
-logs/
+rel/*node
+.project
+.settings
+*.sublime*
 eunit.coverage.xml
-.idea
-*.iml
