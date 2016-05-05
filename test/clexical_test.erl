@@ -1,11 +1,14 @@
 -module(clexical_test).
 -behaviour(herald).
+-behaviour(scribe).
+-behaviour(vassal).
 
 -export([
     proclaim/1,
-    read_excerpt/1,
+    excerpt/1,
     curb/2,
-    recall/1
+    recall/1,
+    work/1
     ]).
 
 -include("../include/clexical_test.hrl").
@@ -14,18 +17,21 @@
     {clexical, [
         {redis_host, "localhost"},
         {redis_port, 6379},
-        {herald, ?MODULE}
+        {herald, ?MODULE},
+        {scribe, ?MODULE},
+        {vassal, ?MODULE}
         ]}
 ]).
 
 setup_test_() ->
     ?meck_confetti([?CONFIG]),
     ?start_lager(),
-    ?start_redo(),
     [Conf] = confetti:fetch(mgmt_conf),
     ClexiCfg = proplists:get_value(clexical, Conf, []),
     Herald = proplists:get_value(herald, ClexiCfg),
-    {ok, _} = clexical:start_link(Herald),
+    Scribe = proplists:get_value(scribe, ClexiCfg),
+    Vassal = proplists:get_value(vassal, ClexiCfg),
+    {ok, _} = clexical:start_link(Herald, Scribe, Vassal),
 
     {setup,
         spawn,
@@ -35,7 +41,7 @@ setup_test_() ->
     }.
 
 init_per_suite() ->
-    random:seed(erlang:now()),    
+    random:seed(erlang:now()),
     ok.
 
 end_per_suite(_Config) ->
@@ -51,19 +57,23 @@ single_execution() ->
     gen_server:call(clexical, {attend, News}),
 	?_assert(true).
 
-proclaim(P) ->
-	lager:debug("Test proclaim: ~p~n", [P]),
+proclaim(L) ->
+	lager:debug("Test Proclaim: ~p~n", [L]),
 	ok.
 
 curb(K, V) ->
-    lager:debug("Test remark: ~p -> ~p~n", [K, V]),
+    lager:debug("Test Curb: ~p -> ~p~n", [K, V]),
     ok.
 
 recall(K) ->
     V=?PRED("1","set",{adverb, purchased},[?PRED("1","set",{verb, <<"celleb">>},[])]),
-    lager:debug("Test recall: ~p -> ~p~n", [K, V]),
+    lager:debug("Test Recall: ~p -> ~p~n", [K, V]),
     V.
 
-read_excerpt(#predicate{abstract=E}) ->
+excerpt(#predicate{abstract=E}) ->
     lager:debug("Test Read Excerpt: ~p ~n", [E]),
     #letter{predicates=E}.
+
+work(#predicate{}=P)->
+    lager:debug("Test Work: ~p ~n", [P]),
+    ok.    

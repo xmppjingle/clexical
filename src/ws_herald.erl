@@ -4,7 +4,6 @@
 
 -include("../include/clexical.hrl").
 
--export([start/1]).
 -export([
 	init/3,
     websocket_init/3, websocket_handle/3,
@@ -12,49 +11,39 @@
 ]).
 
 -export([
-    proclaim/1,
-    read_excerpt/1,
-    curb/2,
-    recall/1
+    proclaim/1
     ]).
 
-start(Port) ->
+% Herald Functions
+proclaim(#letter{sender=Sender}=L) -> 
+	lager:info("Proclamation: ~p ~n", [L]),
+	case erlang:is_pid(Sender) of
+		true ->
+			Sender ! {send, xml_parser:to_binary(L)};
+		_ ->
+			lager:debug("No Destination: ~p ~n", [L]),
+			ok
+	end.
+
+% WebSocket Functions
+init({tcp, http}, _Req, Opts) ->
 	Dispatch = cowboy_router:compile([  
       {'_', [  
         {"/", cowboy_static, {priv_file, clexical, "index.html"}},
         {"/websocket", ws_herald, []}
       ]}  
     ]),  
-    {ok, _} = cowboy:start_http(http, 100, [{port, Port}],  
+    {ok, _} = cowboy:start_http(http, 100, [{port, clexical:get_param(port, Opts, 8084)}],  
         [{env, [{dispatch, Dispatch}]}]),
-    mnesia_mind:init().
-
-init({tcp, http}, _Req, _Opts) ->
+    mnesia_mind:init(),   
 	{upgrade, protocol, cowboy_websocket}.
 
-% Herald Functions
-
-proclaim(#predicate{action=Action}) -> 
-	lager:info("Proclamation: ~p ~n", [Action]),
-	ok.
-
-read_excerpt(#predicate{}=P) ->
-	xml_parser:excerpt_from_predicate(P).
-
-curb(Seal, #predicate{}=P) ->
-	lager:info("Curb: [~p] ~p~n", [Seal, P]),
-	mnesia_mind:bear(Seal, P).
-
-recall(Seal) ->
-	lager:info("Recall: [~p] ~n", [Seal]),
-	mnesia_mind:recollect(Seal).
-
-% WebSocket Functions
 websocket_init(_TransportName, Req, _Opts) ->
 	{ok, Req, undefined_state}.
 
 websocket_handle({text, Msg}, Req, State) ->
-	Letter = xml_parser:letter_from_binary(Msg),
+	L = xml_parser:letter_from_binary(Msg),
+	Letter = L#letter{sender=self()},
 	lager:info("Received Letter: ~n ~p~n", [Letter]),
 	case Letter of
 		#letter{type = decree} -> 
@@ -70,10 +59,11 @@ websocket_handle({text, Msg}, Req, State) ->
 websocket_handle(_Data, Req, State) ->
 	{ok, Req, State}.
 
-websocket_info({timeout, _Ref, Msg}, Req, State) ->
-	{reply, {text, Msg}, Req, State};
+websocket_info({send, Payload}, Req, State) ->
+	{reply, {text, Payload}, Req, State};
 websocket_info(_Info, Req, State) ->
 	{ok, Req, State}.
 
 websocket_terminate(_Reason, _Req, _State) ->
 	ok.
+

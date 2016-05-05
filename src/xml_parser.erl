@@ -39,8 +39,12 @@ letter_from_binary(Bin) ->
 			undefined
 	end.
 
-to_binary(#predicate{abstract=Elem}) ->
-	exmpp_xml:document_to_binary(Elem).
+to_binary(#letter{predicates=[#predicate{abstract=Elem}|T]}=Letter) ->
+	P = exmpp_xml:document_to_binary(Elem),
+	PP = to_binary(Letter#letter{predicates=T}),
+	<<P/binary, PP/binary>>;
+to_binary(_) ->
+	<<>>.
 
 predicate_from_elem({xmlel, _, _, Name, Attribs, _Children}=E) ->
 	ID = exmpp_xml:get_attribute(E, <<"id">>, <<>>),

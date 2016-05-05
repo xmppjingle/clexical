@@ -15,15 +15,14 @@
 %% API functions
 %% ===================================================================
 
-start_link([Clexical, Redis]) ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, [Clexical, Redis]).
+start_link([Clexical]) ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, [Clexical]).
 
 %% ===================================================================
 %% Supervisor callbacks
 %% ===================================================================
 
-init([Clexical, Redis]) ->
+init([Clexical]) ->
     {ok, {{one_for_one, 5, 10}, [
-    	?CHILD(clexical, Clexical),
-        ?CHILD(redo, Redis)
+    	?CHILD(clexical, Clexical)
     ]}}.

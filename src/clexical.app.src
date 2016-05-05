@@ -1,13 +1,12 @@
 {application, clexical,
     [
-        {description, "Clexical Meta Event Driven Evaluator"},
+        {description, "Clexical Event Driven Meta Evaluator"},
         {vsn, git},
         {registered, []},
         {applications, [
             kernel,
             stdlib,
-            lager,
-            redo
+            lager
         ]},
         {mod, {clexical_app, []}},
         {env, [

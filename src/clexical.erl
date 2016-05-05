@@ -5,7 +5,7 @@
 
 %% gen_server callbacks
 -export([
-    start_link/1,
+    start_link/3,
     stop/0,
     init/1,
     handle_call/3,
@@ -20,18 +20,20 @@
     fresh_id/0,
     pronounce/2,
     hear/2,
-    compose_key/1
+    proclaim/2,
+    compose_key/1,
+    get_option/3
 ]).
 
-start_link(Herald) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [Herald], []).
+start_link(Herald, Scribe, Vassal) ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [Herald, Scribe, Vassal], []).
 
 stop() ->
     gen_server:call(?MODULE, stop).
 
-init([Herald]) ->
+init([Herald, Scribe, Vassal]) ->
     lager:info(?LOGO,[]),
-    {ok, #state{herald=Herald}}.
+    {ok, #state{herald=Herald, scribe=Scribe, vassal=Vassal}}.
 
 handle_info(Record, State) ->
     lager:debug("Unknown Info Request: ~p~n", [Record]),
@@ -51,6 +53,10 @@ handle_call({recite, #letter{}=Letter}, _From, State) ->
 handle_call({attend, #letter{}=Letter}, _From, State) ->
     lager:info("Hear Letter: ~p~n", [Letter]),
     spawn(?MODULE, hear, [Letter, State]),
+    {reply, ok, State};    
+handle_call({proclaim, #letter{}=Letter}, _From, State) ->
+    lager:info("Proclaim Letter: ~p~n", [Letter]),
+    spawn(?MODULE, proclaim, [Letter, State]),
     {reply, ok, State};
 handle_call(Info, _From, _State) ->
     lager:info("Received Call: ~p~n", [Info]),
@@ -85,25 +91,37 @@ pronounce(_, _) ->
     ok. % Empty Minded
 
 -spec say(#predicate{}, #state{}) -> any().
-say(#predicate{}=P, #state{herald=Herald}=State) ->
+say(#predicate{}=P, #state{herald=Herald, vassal=Vassal}=State) ->
     lager:info("Say: ~p~n", [P]),
-    pronounce(Herald:read_excerpt(P), State#state{last_predicate=P}),
-    Herald:proclaim(P).
+    pronounce(Herald:excerpt(P), State#state{last_predicate=P}),
+    Vassal:work(P).
 
 -spec refrain(#predicate{}, #state{}) -> any().
-refrain(#predicate{}=P, #state{herald=Herald}=_State) ->
+refrain(#predicate{}=P, #state{scribe=Scribe}=_State) ->
     lager:info("Refrain: ~p ~n", [P]),
     Key = compose_key(P),
-    Herald:curb(Key, P).
+    Scribe:curb(Key, P).
 
 -spec hear(#letter{}, #state{}) -> any().
-hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter, #state{herald=Herald}=State) ->
+hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter, #state{scribe=Scribe}=State) ->
     lager:info("Hear: ~p ~n", [P]),
-    Excerpt = Herald:read_excerpt(Herald:recall(compose_key(P))),
+    case Scribe:recall(compose_key(P)) of
+        undefined -> 
+            E = Scribe:recall(compose_key(P#predicate{adjectives=[]}));
+        E = #predicate{} ->
+            ok
+    end,
+    Excerpt = Scribe:excerpt(E),
     pronounce(Excerpt, State),
     hear(Letter#letter{predicates=T}, State);
 hear(_, _) ->    
     ok. % We don't take actions based on what we hear
+
+-spec proclaim(#letter{}, #state{}) -> any().
+proclaim(#letter{}=Letter, #state{scribe=Herald}) ->
+    Herald:proclaim(Letter);
+proclaim(_, _) ->    
+    ok. % We don't take actions based on what we don't know
 
 % Utils Functions
 -spec fresh_id() -> binary().
@@ -119,3 +137,11 @@ compose_key(#predicate{action={_,BName}, subject=Subject, id=ID}) ->
     <<Subject/binary, ID/binary, BName/binary>>;
 compose_key(_) ->
     <<>>.    
+
+get_option(Key, Opts, Default) ->
+    case lists:keyfind(Key, 1, Opts) of
+        {_K, V} ->
+            V;
+        _ ->
+            Default
+    end.

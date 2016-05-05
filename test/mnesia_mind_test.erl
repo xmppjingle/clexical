@@ -24,6 +24,6 @@ end_per_suite(_Config) ->
 basic_bear_in_mind_test() ->
 	P = ?PRED("1","set",{verb, <<"offer">>},[?PRED("1","set",{adverb, <<"purchased">>},[?PRED("1","set",{verb, celleb},[])])]),
 	K = clexical:compose_key(P),
-	mnesia_mind:bear(K, P),
-	PP = mnesia_mind:recollect(K),
+	mnesia_mind:curb(K, P),
+	PP = mnesia_mind:recall(K),
     ?_assertEqual(P, PP).

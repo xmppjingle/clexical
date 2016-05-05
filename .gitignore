@@ -1,6 +1,8 @@
 *~
 .eunit
 deps
+/.rebar*
+.rebar*
 *.o
 *.beam
 *.plt
