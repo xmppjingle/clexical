@@ -23,7 +23,7 @@ init(Opts) ->
         {"/websocket", ws_herald, []}
       ]}  
     ]),  
-    {ok, _} = cowboy:start_http(http, 100, [{port, clexical:get_param(port, Opts, 8084)}],  
+    {ok, _} = cowboy:start_http(http, 100, [{port, clexical:get_option(port, Opts, 8084)}],  
         [{env, [{dispatch, Dispatch}]}]).
 
 proclaim(#letter{sender=Sender}=L) -> 

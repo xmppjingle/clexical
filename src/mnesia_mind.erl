@@ -14,7 +14,7 @@
 	]).
 
 -spec init(Opts :: any()) -> ok|error.
-init(Opts) ->
+init(_Opts) ->
 	mnesia:start(),
 	mnesia:create_table(envelope,  [{attributes, record_info(fields, envelope)}]).
 
