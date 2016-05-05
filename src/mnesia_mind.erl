@@ -7,14 +7,14 @@
 
 %% API
 -export([
-	init/0,
+	init/1,
 	curb/2,
 	recall/1,
 	excerpt/1	
 	]).
 
--spec init() -> ok|error.
-init() ->
+-spec init(Opts :: any()) -> ok|error.
+init(Opts) ->
 	mnesia:start(),
 	mnesia:create_table(envelope,  [{attributes, record_info(fields, envelope)}]).
 

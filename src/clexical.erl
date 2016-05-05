@@ -31,8 +31,11 @@ start_link(Herald, Scribe, Vassal) ->
 stop() ->
     gen_server:call(?MODULE, stop).
 
-init([Herald, Scribe, Vassal]) ->
+init([{Herald, HOpts}, {Scribe, SOpts}, {Vassal, VOpts}]) ->
     lager:info(?LOGO,[]),
+    Herald:init(HOpts),
+    Scribe:init(SOpts),
+    Vassal:init(VOpts),    
     {ok, #state{herald=Herald, scribe=Scribe, vassal=Vassal}}.
 
 handle_info(Record, State) ->

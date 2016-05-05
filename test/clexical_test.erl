@@ -8,18 +8,17 @@
     excerpt/1,
     curb/2,
     recall/1,
-    work/1
+    work/1,
+    init/1
     ]).
 
 -include("../include/clexical_test.hrl").
 
 -define(CONFIG, [
     {clexical, [
-        {redis_host, "localhost"},
-        {redis_port, 6379},
-        {herald, ?MODULE},
-        {scribe, ?MODULE},
-        {vassal, ?MODULE}
+        {herald, {?MODULE, [{port, 8082}]}},
+        {scribe, {?MODULE, []}},
+        {vassal, {?MODULE, []}}
         ]}
 ]).
 
@@ -77,3 +76,6 @@ excerpt(#predicate{abstract=E}) ->
 work(#predicate{}=P)->
     lager:debug("Test Work: ~p ~n", [P]),
     ok.    
+
+init(_Opts) ->
+    ok.

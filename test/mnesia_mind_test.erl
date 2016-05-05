@@ -5,7 +5,7 @@
 -include("../include/clexical_test.hrl").
 
 setup_test_() ->
-    mnesia_mind:init(),
+    mnesia_mind:init([]),
     ?start_lager(),
     {setup,
         spawn,

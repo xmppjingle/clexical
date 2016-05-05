@@ -15,6 +15,16 @@
     ]).
 
 % Herald Functions
+init(Opts) ->
+	Dispatch = cowboy_router:compile([  
+      {'_', [  
+        {"/", cowboy_static, {priv_file, clexical, "index.html"}},
+        {"/websocket", ws_herald, []}
+      ]}  
+    ]),  
+    {ok, _} = cowboy:start_http(http, 100, [{port, clexical:get_param(port, Opts, 8084)}],  
+        [{env, [{dispatch, Dispatch}]}]).
+
 proclaim(#letter{sender=Sender}=L) -> 
 	lager:info("Proclamation: ~p ~n", [L]),
 	case erlang:is_pid(Sender) of
@@ -27,15 +37,6 @@ proclaim(#letter{sender=Sender}=L) ->
 
 % WebSocket Functions
 init({tcp, http}, _Req, Opts) ->
-	Dispatch = cowboy_router:compile([  
-      {'_', [  
-        {"/", cowboy_static, {priv_file, clexical, "index.html"}},
-        {"/websocket", ws_herald, []}
-      ]}  
-    ]),  
-    {ok, _} = cowboy:start_http(http, 100, [{port, clexical:get_param(port, Opts, 8084)}],  
-        [{env, [{dispatch, Dispatch}]}]),
-    mnesia_mind:init(),   
 	{upgrade, protocol, cowboy_websocket}.
 
 websocket_init(_TransportName, Req, _Opts) ->
