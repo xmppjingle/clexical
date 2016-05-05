@@ -19,3 +19,5 @@ rel/*node
 *.sublime*
 eunit.coverage.xml
 .rebar/*
+
+.rebar/erlcinfo

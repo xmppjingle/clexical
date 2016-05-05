@@ -11,7 +11,8 @@
 ]).
 
 -export([
-    proclaim/1
+    proclaim/1,
+    init/1
     ]).
 
 % Herald Functions
@@ -36,7 +37,7 @@ proclaim(#letter{sender=Sender}=L) ->
 	end.
 
 % WebSocket Functions
-init({tcp, http}, _Req, Opts) ->
+init({tcp, http}, _Req, _Opts) ->
 	{upgrade, protocol, cowboy_websocket}.
 
 websocket_init(_TransportName, Req, _Opts) ->
