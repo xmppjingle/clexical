@@ -2,6 +2,7 @@
 -behavior(clexical_parser).
 
 -include("../include/clexical.hrl").
+-include("../include/clexical_app.hrl").
 -include_lib("exmpp/include/exmpp.hrl").
 
 -define(Clean(Stanza), begin
@@ -24,6 +25,8 @@ end).
 	to_binary/1	
 	]).
 
+excerpt_from_predicate(#predicate{abstract=undefined}) ->
+	#letter{predicates=[]};
 excerpt_from_predicate(#predicate{abstract=Abstract}) ->
 	Kin = exmpp_xml:get_child_elements(Abstract),
 	P = lists:map(fun(Elem) -> predicate_from_elem(Elem) end, Kin),

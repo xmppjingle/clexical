@@ -19,7 +19,7 @@
 init(Opts) ->
 	Dispatch = cowboy_router:compile([  
       {'_', [  
-        {"/", cowboy_static, {priv_file, clexical, "index.html"}},
+        {"/", cowboy_static, {file, utils:priv_dir(clexical), "index.html"}},
         {"/websocket", ws_herald, []}
       ]}  
     ]),  

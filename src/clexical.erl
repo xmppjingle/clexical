@@ -2,6 +2,7 @@
 -behaviour(gen_server).
 
 -include("../include/clexical.hrl").
+-include("../include/clexical_app.hrl").
 
 %% gen_server callbacks
 -export([
@@ -22,7 +23,10 @@
     hear/2,
     proclaim/2,
     compose_key/1,
-    get_option/3
+    get_option/3,
+    proclaim/1,
+    recite/1,
+    attend/1
 ]).
 
 start_link(Herald, Scribe, Vassal) ->
@@ -73,6 +77,20 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 %% Clexical Functions
+
+-spec recite(#letter{}) -> any().
+recite(#letter{}=L) ->
+    gen_server:call(clexical, {recite, L}).
+
+-spec attend(#letter{}) -> any().
+attend(#letter{}=L) ->
+    lager:info("Attend Letter: ~p~n", [L]),
+    gen_server:call(clexical, {attend, L}).
+
+-spec proclaim(#letter{}) -> any().
+proclaim(#letter{}=L) ->
+    gen_server:call(clexical, {proclaim, L}).
+
 -spec pronounce(#letter{}, #state{}) -> any().
 pronounce(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter,  #state{last_predicate=LP}=State) ->
     case LP of
@@ -94,9 +112,9 @@ pronounce(_, _) ->
     ok. % Empty Minded
 
 -spec say(#predicate{}, #state{}) -> any().
-say(#predicate{}=P, #state{herald=Herald, vassal=Vassal}=State) ->
+say(#predicate{}=P, #state{scribe=Scribe, vassal=Vassal}=State) ->
     lager:info("Say: ~p~n", [P]),
-    pronounce(Herald:excerpt(P), State#state{last_predicate=P}),
+    pronounce(Scribe:excerpt(P), State#state{last_predicate=P}),
     Vassal:work(P).
 
 -spec refrain(#predicate{}, #state{}) -> any().
@@ -134,7 +152,7 @@ fresh_id() ->
 -spec compose_key(#predicate{}) -> binary().
 compose_key(#predicate{adjectives={dict, _, _, _, _, _, _, _, _}=Dict}=P) ->
     BareKey = compose_key(P#predicate{adjectives=[]}),
-    Suffix = dict:fold(fun(_K, V, A) -> <<A/binary, V/binary>> end, <<>>, Dict),
+    Suffix = dict:fold(fun(_K, [V], A) -> <<A/binary, V/binary>> end, <<>>, Dict),
     <<BareKey/binary, Suffix/binary>>;
 compose_key(#predicate{action={_,BName}, subject=Subject, id=ID}) ->
     <<Subject/binary, ID/binary, BName/binary>>;
