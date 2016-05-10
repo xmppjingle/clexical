@@ -139,7 +139,7 @@ hear(_, _) ->
     ok. % We don't take actions based on what we hear
 
 -spec proclaim(#letter{}, #state{}) -> any().
-proclaim(#letter{}=Letter, #state{scribe=Herald}) ->
+proclaim(#letter{}=Letter, #state{herald=Herald}) ->
     Herald:proclaim(Letter);
 proclaim(_, _) ->    
     ok. % We don't take actions based on what we don't know

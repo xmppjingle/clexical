@@ -34,5 +34,6 @@ recall(ID) ->
 	end.
 
 -spec excerpt(#predicate{}) -> #letter{}|undefined.
+excerpt(undefined) -> undefined;
 excerpt(#predicate{}=P) ->
 	xml_parser:excerpt_from_predicate(P).
