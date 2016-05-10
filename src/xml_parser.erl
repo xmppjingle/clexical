@@ -49,13 +49,19 @@ letter_from_binary(Bin) ->
 to_binary(#letter{predicates=[], type=Type}) ->
 	BType = erlang:list_to_binary(erlang:atom_to_list(Type)),
 	<<"<", BType/binary, "/>">>;
-to_binary(#letter{predicates=[#predicate{abstract=Elem}|T], type=Type}=Letter) ->
-	P = exmpp_xml:document_to_binary(Elem),
-	PP = to_binary(Letter#letter{predicates=T}),
+to_binary(#letter{predicates=PS, type=Type}) ->
+	PP = to_binary_(PS),
 	BType = erlang:list_to_binary(erlang:atom_to_list(Type)),
-	<<"<", BType/binary, ">", P/binary, PP/binary, "</", BType/binary, ">">>;
+	<<"<", BType/binary, ">", PP/binary, "</", BType/binary, ">">>;
 to_binary(_) ->
 	<<>>.
+
+to_binary_([]) ->
+	<<>>;
+to_binary_([#predicate{abstract=Elem}|T]) ->
+	P = exmpp_xml:document_to_binary(Elem),
+	PP = to_binary_(T),
+	<<P/binary, PP/binary>>.
 
 predicate_from_binary(Bin) ->
 	case ?Parse(Bin) of
