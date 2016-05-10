@@ -44,10 +44,14 @@ letter_from_binary(Bin) ->
 			undefined
 	end.
 
-to_binary(#letter{predicates=[#predicate{abstract=Elem}|T]}=Letter) ->
+to_binary(#letter{predicates=[], type=Type}) ->
+	BType = erlang:list_to_binary(erlang:atom_to_list(Type)),
+	<<"<", BType/binary, "/>">>;
+to_binary(#letter{predicates=[#predicate{abstract=Elem}|T], type=Type}=Letter) ->
 	P = exmpp_xml:document_to_binary(Elem),
 	PP = to_binary(Letter#letter{predicates=T}),
-	<<P/binary, PP/binary>>;
+	BType = erlang:list_to_binary(erlang:atom_to_list(Type)),
+	<<"<", BType/binary, ">", P/binary, PP/binary, "</", BType/binary, ">">>;
 to_binary(_) ->
 	<<>>.
 
