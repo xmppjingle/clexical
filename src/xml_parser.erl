@@ -22,7 +22,9 @@ end).
 -export([
 	excerpt_from_predicate/1,
 	letter_from_binary/1,
-	to_binary/1	
+	to_binary/1,
+	predicate_from_binary/1,
+	predicate_from_elem/1
 	]).
 
 excerpt_from_predicate(undefined) ->
@@ -54,6 +56,15 @@ to_binary(#letter{predicates=[#predicate{abstract=Elem}|T], type=Type}=Letter) -
 	<<"<", BType/binary, ">", P/binary, PP/binary, "</", BType/binary, ">">>;
 to_binary(_) ->
 	<<>>.
+
+predicate_from_binary(Bin) ->
+	case ?Parse(Bin) of
+		{xmlel,_,_,_Type,_,_Children} = Elem ->
+			predicate_from_elem(Elem);
+		_R ->
+			lager:info("Invalid Predicate Type: ~p ~n", [_R]),
+			undefined
+	end.	
 
 predicate_from_elem({xmlel, _, _, Name, Attribs, _Children}=E) ->
 	ID = exmpp_xml:get_attribute(E, <<"id">>, <<>>),

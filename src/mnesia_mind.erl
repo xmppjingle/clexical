@@ -28,6 +28,7 @@ curb(_, _) ->
 recall(ID) ->
 	case mnesia:dirty_read(envelope, ID) of
 		[#envelope{predicate=P}|_] ->
+			mnesia:dirty_delete(envelope, ID),
 			P;
 		_ ->
 			undefined
