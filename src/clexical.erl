@@ -92,20 +92,20 @@ proclaim(#letter{}=L) ->
     gen_server:call(clexical, {proclaim, L}).
 
 -spec pronounce(#letter{}, #state{}) -> any().
-pronounce(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter,  #state{last_predicate=LP}=State) ->
+pronounce(#letter{predicates=[#predicate{action={adverb,_}}=P|T], sender=Sender}=Letter,  #state{last_predicate=LP}=State) ->
     case LP of
         #predicate{id=ID, subject=Subject} ->
-            refrain(P#predicate{id=ID, subject=Subject}, State);
+            refrain(P#predicate{id=ID, subject=Subject, author=Sender}, State);
         _ ->
-            refrain(P#predicate{id=fresh_id()}, State)
+            refrain(P#predicate{id=fresh_id(), author=Sender}, State)
     end,
     pronounce(Letter#letter{predicates=T}, State);
-pronounce(#letter{predicates=[#predicate{action={verb,_},id=ID}=P|T]}=Letter, State) ->    
+pronounce(#letter{predicates=[#predicate{action={verb,_},id=ID}=P|T], sender=Sender}=Letter, State) ->    
         case ID of
             <<>> ->
-                say(P#predicate{id=fresh_id()}, State);
+                say(P#predicate{id=fresh_id(), author=Sender}, State);
             _ ->
-                say(P, State)
+                say(P#predicate{author=Sender}, State)
     end,
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(_, _) ->
@@ -124,11 +124,11 @@ refrain(#predicate{}=P, #state{scribe=Scribe}=_State) ->
     Scribe:curb(Key, P).
 
 -spec hear(#letter{}, #state{}) -> any().
-hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter, #state{scribe=Scribe}=State) ->
+hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T], sender=Sender}=Letter, #state{scribe=Scribe}=State) ->
     lager:info("Hear: ~p ~n", [P]),
     case Scribe:recall(compose_key(P)) of
         undefined -> 
-            E = Scribe:recall(compose_key(P#predicate{adjectives=[]}));
+            E = Scribe:recall(compose_key(P#predicate{adjectives=[], author=Sender}));
         E = #predicate{} ->
             ok
     end,

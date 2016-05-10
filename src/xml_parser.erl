@@ -25,6 +25,8 @@ end).
 	to_binary/1	
 	]).
 
+excerpt_from_predicate(undefined) ->
+	#letter{predicates=[]};
 excerpt_from_predicate(#predicate{abstract=undefined}) ->
 	#letter{predicates=[]};
 excerpt_from_predicate(#predicate{abstract=Abstract}) ->
