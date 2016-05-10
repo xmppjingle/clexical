@@ -27,10 +27,12 @@ init(Opts) ->
         [{env, [{dispatch, Dispatch}]}]).
 
 proclaim(#letter{sender=Sender}=L) -> 
-	lager:info("Proclamation: ~p ~n", [L]),
+	lager:info("Proclamation: ~p -> ~p~n", [L, Sender]),
 	case erlang:is_pid(Sender) of
 		true ->
-			Sender ! {send, xml_parser:to_binary(L)};
+			Bin = xml_parser:to_binary(L),
+			lager:info("Proclamation Data: ~p ~n", [Bin]),
+			Sender ! {send, Bin};
 		_ ->
 			lager:debug("No Destination: ~p ~n", [L]),
 			ok
