@@ -26,13 +26,13 @@ init(Opts) ->
     {ok, _} = cowboy:start_http(http, 100, [{port, clexical:get_option(port, Opts, 8084)}],  
         [{env, [{dispatch, Dispatch}]}]).
 
-proclaim(#letter{sender=Sender}=L) -> 
-	lager:info("Proclamation: ~p -> ~p~n", [L, Sender]),
-	case erlang:is_pid(Sender) of
+proclaim(#letter{author=Author}=L) -> 
+	lager:info("Proclamation: ~p -> ~p~n", [L, Author]),
+	case erlang:is_pid(Author) of
 		true ->
 			Bin = xml_parser:to_binary(L),
 			lager:info("Proclamation Data: ~p ~n", [Bin]),
-			Sender ! {send, Bin};
+			Author ! {send, Bin};
 		_ ->
 			lager:debug("No Destination: ~p ~n", [L]),
 			ok
@@ -47,7 +47,7 @@ websocket_init(_TransportName, Req, _Opts) ->
 
 websocket_handle({text, Msg}, Req, State) ->
 	L = xml_parser:letter_from_binary(Msg),
-	Letter = L#letter{sender=self()},
+	Letter = L#letter{author=self()},
 	lager:info("Received Letter: ~n ~p~n", [Letter]),
 	case Letter of
 		#letter{type = decree} -> 

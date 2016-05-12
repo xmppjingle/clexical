@@ -1,9 +1,9 @@
--module(xml_parser).
--behavior(clexical_parser).
+-module(xml_mnesia_mind).
+-behaviour(scribe).
 
 -include("../include/clexical.hrl").
--include("../include/clexical_app.hrl").
--include_lib("exmpp/include/exmpp.hrl").
+
+-record(envelope, {seal :: binary(), predicate :: #predicate{}}).
 
 -define(Clean(Stanza), begin
   case Stanza of
@@ -20,21 +20,43 @@ end).
 
 %% API
 -export([
-	excerpt_from_predicate/1,
+	init/1,
+	curb/2,
+	recall/1,
+	excerpt/1,
 	letter_from_binary/1,
-	to_binary/1,
-	predicate_from_binary/1,
-	predicate_from_elem/1
+	to_binary/1
 	]).
 
-excerpt_from_predicate(undefined) ->
-	#letter{predicates=[]};
-excerpt_from_predicate(#predicate{abstract=undefined}) ->
-	#letter{predicates=[]};
-excerpt_from_predicate(#predicate{abstract=Abstract}) ->
+-spec init(Opts :: any()) -> ok|error.
+init(_Opts) ->
+	mnesia:start(),
+	mnesia:create_table(envelope,  [{attributes, record_info(fields, envelope)}]).
+
+-spec curb(Seal :: binary(), #predicate{}) -> any().
+curb(Seal, #predicate{}=Predicate) when is_binary(Seal) -> 
+	mnesia:dirty_write(#envelope{seal=Seal, predicate=Predicate});
+curb(_, _) ->
+	undefined.
+
+-spec recall(binary()) -> #predicate{}|undefined.
+recall(ID) ->
+	case mnesia:dirty_read(envelope, ID) of
+		[#envelope{predicate=P}|_] ->
+			% mnesia:dirty_delete(envelope, ID),
+			P;
+		_ ->
+			undefined
+	end.
+
+-spec excerpt(#predicate{}) -> [#predicate{}]|undefined.
+excerpt(undefined) ->
+	undefined;
+excerpt(#predicate{abstract=undefined}) ->
+	[];
+excerpt(#predicate{abstract=Abstract, author=Author}) ->
 	Kin = exmpp_xml:get_child_elements(Abstract),
-	P = lists:map(fun(Elem) -> predicate_from_elem(Elem) end, Kin),
-	#letter{predicates=P}.
+	lists:map(fun(Elem) -> (predicate_from_elem(Elem))#predicate{author=Author} end, Kin).
 
 letter_from_binary(Bin) ->
 	case ?Parse(Bin) of

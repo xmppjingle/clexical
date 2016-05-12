@@ -9,6 +9,8 @@
     curb/2,
     recall/1,
     work/1,
+    letter_from_binary/1,
+    to_binary/1,
     init/1
     ]).
 
@@ -76,6 +78,12 @@ excerpt(#predicate{abstract=E}) ->
 work(#predicate{}=P)->
     lager:debug("Test Work: ~p ~n", [P]),
     ok.    
+
+letter_from_binary(_) ->
+    undefined.
+
+to_binary(_) ->
+    undefined.
 
 init(_Opts) ->
     ok.
