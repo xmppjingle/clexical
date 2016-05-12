@@ -1,4 +1,4 @@
--module(xml_mnesia_mind).
+-module(xml_mnesia_scribe).
 -behaviour(scribe).
 
 -include("../include/clexical.hrl").

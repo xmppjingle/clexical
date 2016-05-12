@@ -30,7 +30,7 @@ proclaim(#letter{author=Author}=L) ->
 	lager:info("Proclamation: ~p -> ~p~n", [L, Author]),
 	case erlang:is_pid(Author) of
 		true ->
-			Bin = xml_parser:to_binary(L),
+			Bin = xml_mnesia_scribe:to_binary(L),
 			lager:info("Proclamation Data: ~p ~n", [Bin]),
 			Author ! {send, Bin};
 		_ ->
@@ -46,7 +46,7 @@ websocket_init(_TransportName, Req, _Opts) ->
 	{ok, Req, undefined_state}.
 
 websocket_handle({text, Msg}, Req, State) ->
-	L = xml_parser:letter_from_binary(Msg),
+	L = xml_mnesia_scribe:letter_from_binary(Msg),
 	Letter = L#letter{author=self()},
 	lager:info("Received Letter: ~n ~p~n", [Letter]),
 	case Letter of
