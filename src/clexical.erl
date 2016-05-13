@@ -110,6 +110,7 @@ hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter, #state{scri
         _ ->
             PP = Scribe:recall(compose_key(P#predicate{adjectives=[]}))
     end,
+    lager:info("Recall: ~p~n", [PP]),
     pronounce(Letter#letter{predicates=Herald:excerpts(PP)}, State#state{last_predicate=P}),
     hear(Letter#letter{predicates=T}, State);
 hear(_, _) ->    
