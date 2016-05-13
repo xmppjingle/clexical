@@ -25,7 +25,8 @@ end).
 	recall/1,
 	excerpt/1,
 	letter_from_binary/1,
-	to_binary/1
+	to_binary/1,
+	predicate_from_binary/1
 	]).
 
 -spec init(Opts :: any()) -> ok|error.
