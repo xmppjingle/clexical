@@ -97,9 +97,9 @@ pronounce(#letter{predicates=[#predicate{action={adverb,_}}=P|T], author=Author}
         #predicate{id=ID, subject=Subject} ->
             PP=P#predicate{id=ID, subject=Subject, author=Author};
         _ ->
-            PP=P#predicate{id=fresh_id(), author=Author}, State#state{last_predicate=PP}
+            PP=P#predicate{id=fresh_id(), author=Author}
     end,
-    refrain(PP, State#state{last_predicate=PP}),
+    refrain(PP, State#state{last_predicate=P}),
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(#letter{predicates=[#predicate{action={verb,_},id=ID}=P|T], author=Author}=Letter, State) ->    
         case ID of
