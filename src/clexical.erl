@@ -95,11 +95,11 @@ proclaim(#letter{}=L) ->
 pronounce(#letter{predicates=[#predicate{action={adverb,_}}=P|T], author=Author}=Letter,  #state{last_predicate=LP}=State) ->
     case LP of
         #predicate{id=ID, subject=Subject} ->
-            PP=P#predicate{id=ID, subject=Subject, author=Author};
+            PP= P#predicate{id=ID, subject=Subject, author=Author};
         _ ->
-            PP=P#predicate{id=fresh_id(), author=Author}
+            PP= P#predicate{id=fresh_id(), author=Author}
     end,
-    refrain(PP, State#state{last_predicate=P}),
+    refrain(PP, State),
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(#letter{predicates=[#predicate{action={verb,_},id=ID}=P|T], author=Author}=Letter, State) ->    
         case ID of
