@@ -53,16 +53,16 @@ handle_cast(_Msg, State) ->
 handle_call(fresh_id, _From, #state{lastid=LID}=State) ->
     ID = LID + 1,
     {reply, erlang:integer_to_binary(ID), State#state{lastid=ID}};
-handle_call({recite, #letter{}=Letter}, _From, State) ->
-    lager:info("Recite Letter: ~p~n", [Letter]),
+handle_call({recite, #letter{}=Letter}, _From, #state{herald=Herald}=State) ->
+    lager:debug("Recite Letter: ~p~n", [Herald:to_binary(Letter)]),
     spawn(?MODULE, pronounce, [Letter, State]),
     {reply, ok, State};
-handle_call({attend, #letter{}=Letter}, _From, State) ->
-    lager:info("Hear Letter: ~p~n", [Letter]),
+handle_call({attend, #letter{}=Letter}, _From, #state{herald=Herald}=State) ->
+    lager:debug("Hear Letter: ~p~n", [Herald:to_binary(Letter)]),
     spawn(?MODULE, hear, [Letter, State]),
     {reply, ok, State};    
-handle_call({proclaim, #letter{}=Letter}, _From, State) ->
-    lager:info("Proclaim Letter: ~p~n", [Letter]),
+handle_call({proclaim, #letter{}=Letter}, _From, #state{herald=Herald}=State) ->
+    lager:debug("Proclaim Letter: ~p~n", [Herald:to_binary(Letter)]),
     spawn(?MODULE, proclaim, [Letter, State]),
     {reply, ok, State};
 handle_call(Info, _From, _State) ->
@@ -84,7 +84,6 @@ recite(#letter{}=L) ->
 
 -spec attend(#letter{}) -> any().
 attend(#letter{}=L) ->
-    lager:info("Attend Letter: ~p~n", [L]),
     gen_server:call(clexical, {attend, L}).
 
 -spec proclaim(#letter{}) -> any().
@@ -105,7 +104,6 @@ pronounce(_, _) ->
 
 -spec hear(#letter{}, #state{}) -> any().
 hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter, #state{scribe=Scribe, herald=Herald}=State) ->
-    lager:info("Hear: ~p ~n", [P]),
     case Scribe:recall(compose_key(P)) of
         #predicate{}=PP ->
             pk;
@@ -121,22 +119,23 @@ hear(_, _) ->
 
 -spec say(#letter{}, #state{}) -> any().
 say(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{herald=Herald, vassal=Vassal, last_predicate=LP}=State) ->
-    lager:info("Say: ~p~n", [P]),
+    lager:info("Say: ~p~n", [Herald:to_binary(Letter)]),
     pronounce(Letter#letter{predicates=Herald:excerpts(P)}, State#state{last_predicate=P}),
     Vassal:work(Letter#letter{predicates=[P]}, LP);
 say(_,_) ->
     ok.
 
 -spec refrain(#letter{}, #state{}) -> any().
-refrain(#letter{predicates=[#predicate{}=P|_], author=Author}, #state{scribe=Scribe}=_State) ->
-    lager:info("Refrain: ~p ~n", [P]),    
+refrain(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{herald=Herald, scribe=Scribe}=_State) ->
+    lager:info("Refrain: ~p ~n", [Herald:to_binary(Letter)]),    
     Key = compose_key(P),
-    Scribe:curb(Key, P#predicate{author=Author});
+    Scribe:curb(Key, P);
 refrain(_,_) ->
     ok.
 
 -spec proclaim(#letter{}, #state{}) -> any().
-proclaim(#letter{}=Letter, #state{herald=Herald}) ->
+proclaim(#letter{predicates=[#predicate{}|_]}=Letter, #state{herald=Herald}) ->
+    lager:info("Proclaim: ~p ~n", [Herald:to_binary(Letter)]),
     Herald:proclaim(Letter);
 proclaim(_, _) ->    
     ok. % We don't take actions based on what we don't know
