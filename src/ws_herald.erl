@@ -17,7 +17,7 @@ end).
     exmpp_xml:remove_whitespaces_deeply(lists:nth(1, exmpp_xml:parse_document(XML,[{names_as_atom, true}])))  
 end). 
 
--record(ws_state, {reactive_vassal}).
+% -record(ws_state, {reactive_vassal}).
 
 -export([
 	init/3,
@@ -123,7 +123,7 @@ get_kind(Name) ->
 init({tcp, http}, _Req, _Opts) ->
 	{upgrade, protocol, cowboy_websocket}.
 
-websocket_init(_TransportName, Req, Opts) ->
+websocket_init(_TransportName, Req, _Opts) ->
 	{ok, Req, undefined_state}.
 
 websocket_handle({text, Msg}, Req, State) ->

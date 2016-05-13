@@ -20,7 +20,8 @@ init(_Opts) ->
 -spec curb(Seal :: binary(), #predicate{}) -> any().
 curb(Seal, #predicate{}=Predicate) when is_binary(Seal) -> 
 	mnesia:dirty_write(#envelope{seal=Seal, predicate=Predicate});
-curb(_, _) ->
+curb(_K, _P) ->
+	lager:error("Invalid Seal[~p] or Predicate: ~p", [_K, _P]),
 	undefined.
 
 -spec recall(binary()) -> #predicate{}|undefined.

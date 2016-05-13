@@ -128,8 +128,8 @@ say(_,_) ->
 
 -spec refrain(#letter{}, #state{}) -> any().
 refrain(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{herald=Herald, scribe=Scribe}=_State) ->
-    lager:info("Refrain: ~p ~n", [Herald:to_binary(Letter)]),    
     Key = compose_key(P),
+    lager:info("Refrain[~p]: ~p ~n", [Key, Herald:to_binary(Letter)]),    
     Scribe:curb(Key, P);
 refrain(_,_) ->
     ok.
