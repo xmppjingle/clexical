@@ -104,7 +104,7 @@ pronounce(_, _) ->
     ok. % Empty Minded
 
 -spec hear(#letter{}, #state{}) -> any().
-hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter, #state{scribe=Scribe}=State) ->
+hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter, #state{scribe=Scribe, herald=Herald}=State) ->
     lager:info("Hear: ~p ~n", [P]),
     case Scribe:recall(compose_key(P)) of
         #predicate{}=PP ->
@@ -112,7 +112,7 @@ hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter, #state{scri
         _ ->
             PP = Scribe:recall(compose_key(P#predicate{adjectives=[]}))
     end,
-    pronounce(Letter#letter{predicates=Scribe:excerpts(PP)}, State#state{last_predicate=P}),
+    pronounce(Letter#letter{predicates=Herald:excerpts(PP)}, State#state{last_predicate=P}),
     hear(Letter#letter{predicates=T}, State);
 hear(_, _) ->    
     ok. % We don't take actions based on what we hear
@@ -120,9 +120,9 @@ hear(_, _) ->
 % King's Functions
 
 -spec say(#letter{}, #state{}) -> any().
-say(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{scribe=Scribe, vassal=Vassal, last_predicate=LP}=State) ->
+say(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{herald=Herald, vassal=Vassal, last_predicate=LP}=State) ->
     lager:info("Say: ~p~n", [P]),
-    pronounce(Letter#letter{predicates=Scribe:excerpts(P)}, State#state{last_predicate=P}),
+    pronounce(Letter#letter{predicates=Herald:excerpts(P)}, State#state{last_predicate=P}),
     Vassal:work(Letter#letter{predicates=[P]}, LP);
 say(_,_) ->
     ok.
