@@ -49,7 +49,7 @@ proclaim(#letter{author=Author}=L) ->
 	lager:info("Proclamation: ~p -> ~p~n", [L, Author]),
 	case erlang:is_pid(Author) of
 		true ->
-			Bin = xml_mnesia_scribe:to_binary(L),
+			Bin = to_binary(L),
 			lager:info("Proclamation Data: ~p ~n", [Bin]),
 			Author ! {send, Bin};
 		_ ->
