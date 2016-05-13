@@ -18,7 +18,7 @@
 
 -define(CONFIG, [
     {clexical, [
-        {herald, {?MODULE, [{port, 8082}]}},
+        {herald, {?MODULE, [{port, 8084}]}},
         {scribe, {?MODULE, []}},
         {vassal, {?MODULE, []}}
         ]}

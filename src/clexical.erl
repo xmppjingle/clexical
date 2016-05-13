@@ -117,6 +117,8 @@ hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter, #state{scri
 hear(_, _) ->    
     ok. % We don't take actions based on what we hear
 
+% King's Functions
+
 -spec say(#letter{}, #state{}) -> any().
 say(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{scribe=Scribe, vassal=Vassal, last_predicate=LP}=State) ->
     lager:info("Say: ~p~n", [P]),

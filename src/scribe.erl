@@ -5,8 +5,3 @@
 
 -callback curb(Key :: binary(), P :: #predicate{}) -> ok|error.
 -callback recall(Key :: binary()) -> #predicate{}|undefined.
-
--callback letter_from_binary(Binary :: binary()) -> undefined|#letter{}.
--callback to_binary(#letter{}) -> undefined|binary().
-
--callback excerpts(#predicate{}) -> []|[#predicate{}].
