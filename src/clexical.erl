@@ -95,10 +95,11 @@ proclaim(#letter{}=L) ->
 pronounce(#letter{predicates=[#predicate{action={adverb,_}}=P|T], author=Author}=Letter,  #state{last_predicate=LP}=State) ->
     case LP of
         #predicate{id=ID, subject=Subject} ->
-            refrain(P#predicate{id=ID, subject=Subject, author=Author}, State);
+            PP=P#predicate{id=ID, subject=Subject, author=Author};
         _ ->
-            refrain(P#predicate{id=fresh_id(), author=Author}, State)
+            PP=P#predicate{id=fresh_id(), author=Author}, State#state{last_predicate=PP}
     end,
+    refrain(PP, State#state{last_predicate=PP}),
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(#letter{predicates=[#predicate{action={verb,_},id=ID}=P|T], author=Author}=Letter, State) ->    
         case ID of
@@ -112,10 +113,10 @@ pronounce(_, _) ->
     ok. % Empty Minded
 
 -spec say(#predicate{}, #state{}) -> any().
-say(#predicate{}=P, #state{scribe=Scribe, vassal=Vassal}=State) ->
+say(#predicate{}=P, #state{scribe=Scribe, vassal=Vassal, last_predicate=LP}=State) ->
     lager:info("Say: ~p~n", [P]),
     pronounce(Scribe:excerpt(P), State#state{last_predicate=P}),
-    Vassal:work(P).
+    Vassal:work(P, LP).
 
 -spec refrain(#predicate{}, #state{}) -> any().
 refrain(#predicate{}=P, #state{scribe=Scribe}=_State) ->
@@ -133,7 +134,7 @@ hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T], author=Author}=Lett
             ok
     end,
     Excerpt = Scribe:excerpt(E),
-    pronounce(Excerpt, State),
+    pronounce(Excerpt, State#state{last_predicate=P}),
     hear(Letter#letter{predicates=T}, State);
 hear(_, _) ->    
     ok. % We don't take actions based on what we hear

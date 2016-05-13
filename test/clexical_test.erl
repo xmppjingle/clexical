@@ -8,7 +8,7 @@
     excerpt/1,
     curb/2,
     recall/1,
-    work/1,
+    work/2,
     letter_from_binary/1,
     to_binary/1,
     init/1
@@ -75,7 +75,7 @@ excerpt(#predicate{abstract=E}) ->
     lager:debug("Test Read Excerpt: ~p ~n", [E]),
     #letter{predicates=E}.
 
-work(#predicate{}=P)->
+work(#predicate{}=P, _)->
     lager:debug("Test Work: ~p ~n", [P]),
     ok.    
 

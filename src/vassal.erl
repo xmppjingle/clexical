@@ -2,4 +2,4 @@
 -include("../include/clexical.hrl").
 
 -callback init(Opts::any()) -> any().
--callback work(#predicate{}) -> #letter{}|undefined.
+-callback work(#predicate{}, #predicate{}) -> #letter{}|undefined.
