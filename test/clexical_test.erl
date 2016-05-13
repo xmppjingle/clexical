@@ -5,7 +5,7 @@
 
 -export([
     proclaim/1,
-    excerpt/1,
+    excerpts/1,
     curb/2,
     recall/1,
     work/2,
@@ -71,12 +71,12 @@ recall(K) ->
     lager:debug("Test Recall: ~p -> ~p~n", [K, V]),
     V.
 
-excerpt(#predicate{abstract=E}) ->
+excerpts(#predicate{abstract=E}) ->
     lager:debug("Test Read Excerpt: ~p ~n", [E]),
-    #letter{predicates=E}.
+    E.
 
-work(#predicate{}=P, _)->
-    lager:debug("Test Work: ~p ~n", [P]),
+work(#letter{}=L, _)->
+    lager:debug("Test Work: ~p ~n", [L]),
     ok.    
 
 letter_from_binary(_) ->

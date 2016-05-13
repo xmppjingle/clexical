@@ -23,7 +23,7 @@ end).
 	init/1,
 	curb/2,
 	recall/1,
-	excerpt/1,
+	excerpts/1,
 	letter_from_binary/1,
 	to_binary/1,
 	predicate_from_binary/1
@@ -50,14 +50,14 @@ recall(ID) ->
 			undefined
 	end.
 
--spec excerpt(#predicate{}) -> [#predicate{}]|undefined.
-excerpt(undefined) ->
-	undefined;
-excerpt(#predicate{abstract=undefined}) ->
+-spec excerpts(#predicate{}) -> [#predicate{}]|[].
+excerpts(#predicate{abstract=undefined}) ->
 	[];
-excerpt(#predicate{abstract=Abstract, author=Author}) ->
+excerpts(#predicate{abstract=Abstract, author=Author}) ->
 	Kin = exmpp_xml:get_child_elements(Abstract),
-	lists:map(fun(Elem) -> (predicate_from_elem(Elem))#predicate{author=Author} end, Kin).
+	lists:map(fun(Elem) -> (predicate_from_elem(Elem))#predicate{author=Author} end, Kin);
+excerpts(_) ->
+	[].
 
 letter_from_binary(Bin) ->
 	case ?Parse(Bin) of

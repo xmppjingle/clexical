@@ -92,52 +92,46 @@ proclaim(#letter{}=L) ->
     gen_server:call(clexical, {proclaim, L}).
 
 -spec pronounce(#letter{}, #state{}) -> any().
-pronounce(#letter{predicates=[#predicate{action={adverb,_}}=P|T], author=Author}=Letter,  #state{last_predicate=LP}=State) ->
-    case LP of
-        #predicate{id=ID, subject=Subject} ->
-            PP= P#predicate{id=ID, subject=Subject, author=Author};
-        _ ->
-            PP= P#predicate{id=fresh_id(), author=Author}
-    end,
-    refrain(PP, State),
+pronounce(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter,  #state{last_predicate=LP}=State) ->
+    PP= fill_id(P, LP),
+    refrain(Letter#letter{predicates=[PP]}, State),
     pronounce(Letter#letter{predicates=T}, State);
-pronounce(#letter{predicates=[#predicate{action={verb,_},id=ID}=P|T], author=Author}=Letter, State) ->    
-        case ID of
-            <<>> ->
-                say(P#predicate{id=fresh_id(), author=Author}, State);
-            _ ->
-                say(P#predicate{author=Author}, State)
-    end,
+pronounce(#letter{predicates=[#predicate{action={verb,_}}=P|T]}=Letter, State) ->    
+    PP = fill_id(P),
+    say(Letter#letter{predicates=[PP]}, State),
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(_, _) ->
     ok. % Empty Minded
 
--spec say(#predicate{}, #state{}) -> any().
-say(#predicate{}=P, #state{scribe=Scribe, vassal=Vassal, last_predicate=LP}=State) ->
-    lager:info("Say: ~p~n", [P]),
-    pronounce(Scribe:excerpt(P), State#state{last_predicate=P}),
-    Vassal:work(P, LP).
-
--spec refrain(#predicate{}, #state{}) -> any().
-refrain(#predicate{}=P, #state{scribe=Scribe}=_State) ->
-    lager:info("Refrain: ~p ~n", [P]),
-    Key = compose_key(P),
-    Scribe:curb(Key, P).
-
 -spec hear(#letter{}, #state{}) -> any().
-hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T], author=Author}=Letter, #state{scribe=Scribe}=State) ->
+hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter, #state{scribe=Scribe}=State) ->
     lager:info("Hear: ~p ~n", [P]),
     case Scribe:recall(compose_key(P)) of
-        undefined -> 
-            E = Scribe:recall(compose_key(P#predicate{adjectives=[], author=Author}));
-        E = #predicate{} ->
-            ok
+        #predicate{}=PP ->
+            pk;
+        _ ->
+            PP = Scribe:recall(compose_key(P#predicate{adjectives=[]}))
     end,
-    Excerpt = Scribe:excerpt(E),
-    pronounce(Excerpt, State#state{last_predicate=P}),
+    pronounce(Letter#letter{predicates=Scribe:excerpts(PP)}, State#state{last_predicate=P}),
     hear(Letter#letter{predicates=T}, State);
 hear(_, _) ->    
     ok. % We don't take actions based on what we hear
+
+-spec say(#letter{}, #state{}) -> any().
+say(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{scribe=Scribe, vassal=Vassal, last_predicate=LP}=State) ->
+    lager:info("Say: ~p~n", [P]),
+    pronounce(Letter#letter{predicates=Scribe:excerpts(P)}, State#state{last_predicate=P}),
+    Vassal:work(Letter#letter{predicates=[P]}, LP);
+say(_,_) ->
+    ok.
+
+-spec refrain(#letter{}, #state{}) -> any().
+refrain(#letter{predicates=[#predicate{}=P|_], author=Author}, #state{scribe=Scribe}=_State) ->
+    lager:info("Refrain: ~p ~n", [P]),    
+    Key = compose_key(P),
+    Scribe:curb(Key, P#predicate{author=Author});
+refrain(_,_) ->
+    ok.
 
 -spec proclaim(#letter{}, #state{}) -> any().
 proclaim(#letter{}=Letter, #state{herald=Herald}) ->
@@ -146,6 +140,23 @@ proclaim(_, _) ->
     ok. % We don't take actions based on what we don't know
 
 % Utils Functions
+
+-spec fill_id(#predicate{}) -> #predicate{}.
+fill_id(#predicate{id= <<>>}=P) ->
+    P#predicate{id=fresh_id()};
+fill_id(#predicate{}=P) ->
+    P.
+
+-spec fill_id(#predicate{}, #predicate{}|undefined) -> #predicate{}.
+fill_id(#predicate{id= <<>>}=P, undefined) ->
+    P#predicate{id=fresh_id()};
+fill_id(#predicate{id= <<>>, subject= <<>>}=P, #predicate{id=ID, subject=Subject}) ->
+    fill_id(P#predicate{id=ID, subject=Subject});
+fill_id(#predicate{id= <<>>}=P, #predicate{id=ID}) ->
+    fill_id(P#predicate{id=ID});
+fill_id(#predicate{}=P, _) ->
+    P.
+
 -spec fresh_id() -> binary().
 fresh_id() ->
     gen_server:call(clexical, fresh_id).

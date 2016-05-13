@@ -9,4 +9,4 @@
 -callback letter_from_binary(Binary :: binary()) -> undefined|#letter{}.
 -callback to_binary(#letter{}) -> undefined|binary().
 
--callback excerpt(#predicate{}) -> []|[#predicate{}].
+-callback excerpts(#predicate{}) -> []|[#predicate{}].
