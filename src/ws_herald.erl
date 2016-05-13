@@ -50,7 +50,6 @@ proclaim(#letter{author=Author}=L) ->
 	case erlang:is_pid(Author) of
 		true ->
 			Bin = to_binary(L),
-			lager:info("Proclamation Data: ~p ~n", [Bin]),
 			Author ! {send, Bin};
 		_ ->
 			lager:debug("No Destination: ~p ~n", [L]),
@@ -130,7 +129,6 @@ websocket_init(_TransportName, Req, Opts) ->
 websocket_handle({text, Msg}, Req, State) ->
 	L = letter_from_binary(Msg),
 	Letter = L#letter{author=self()},
-	lager:info("Received Letter: ~n ~p~n", [Letter]),
 	case Letter of
 		#letter{type = decree} -> 
 			gen_server:call(clexical, {recite, Letter}),
