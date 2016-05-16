@@ -22,7 +22,7 @@ end_per_suite(_Config) ->
     ok.
 
 basic_bear_in_mind_test() ->
-	P = ?PRED("1","set",{verb, <<"offer">>},[?PRED("1","set",{adverb, <<"purchased">>},[?PRED("1","set",{verb, celleb},[])])]),
+	P = ?PRED("1","set",{verb, <<"offer">>},[?PRED("1","set",{preposition, <<"purchased">>},[?PRED("1","set",{verb, celleb},[])])]),
 	K = clexical:compose_key(P),
 	xml_mnesia_scribe:curb(K, P),
 	PP = xml_mnesia_scribe:recall(K),

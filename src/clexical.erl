@@ -91,7 +91,7 @@ proclaim(#letter{}=L) ->
     gen_server:call(clexical, {proclaim, L}).
 
 -spec pronounce(#letter{}, #state{}) -> any().
-pronounce(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter,  #state{last_predicate=LP}=State) ->
+pronounce(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter,  #state{last_predicate=LP}=State) ->
     PP= fill_id(P, LP),
     refrain(Letter#letter{predicates=[PP]}, State),
     pronounce(Letter#letter{predicates=T}, State);
@@ -103,7 +103,7 @@ pronounce(_, _) ->
     ok. % Empty Minded
 
 -spec hear(#letter{}, #state{}) -> any().
-hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T]}=Letter, #state{scribe=Scribe, herald=Herald}=State) ->
+hear(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter, #state{scribe=Scribe, herald=Herald}=State) ->
     case Scribe:recall(compose_key(P)) of
         #predicate{}=PP ->
             pk;
