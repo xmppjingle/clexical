@@ -5,7 +5,7 @@
 -include("../include/clexical_test.hrl").
 
 setup_test_() ->
-    xml_mnesia_scribe:init([]),
+    mnesia_scribe:init([]),
     ?start_lager(),
     {setup,
         spawn,
@@ -24,6 +24,6 @@ end_per_suite(_Config) ->
 basic_bear_in_mind_test() ->
 	P = ?PRED("1","set",{verb, <<"offer">>},[?PRED("1","set",{preposition, <<"purchased">>},[?PRED("1","set",{verb, celleb},[])])]),
 	K = clexical:compose_key(P),
-	xml_mnesia_scribe:curb(K, P),
-	PP = xml_mnesia_scribe:recall(K),
-    ?_assertEqual(P, PP).
+	mnesia_scribe:curb(K, P),
+	PP = mnesia_scribe:recall(K),
+    ?assertEqual(P, PP).

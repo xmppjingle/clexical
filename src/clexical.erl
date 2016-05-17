@@ -29,6 +29,11 @@
     attend/1
 ]).
 
+-export([
+    get_adjective/3,
+    get_adjective/2
+    ]).
+
 start_link(Herald, Scribe, Vassal) ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [Herald, Scribe, Vassal], []).
 
@@ -180,3 +185,17 @@ get_option(Key, Opts, Default) ->
         _ ->
             Default
     end.
+
+-spec get_adjective(binary(), dict()) -> binary() | undefined.
+get_adjective(Key, Dict) ->
+    get_adjective(Key, Dict, undefined).
+
+-spec get_adjective(binary(), dict(), any()) -> binary() | undefined.
+get_adjective(Key, Dict, Default) ->
+    case dict:is_key(Key, Dict) of
+        true ->
+            [V] = dict:fetch(Key, Dict);
+        _ -> 
+            V = Default
+    end,
+    V.

@@ -34,11 +34,6 @@ end).
 	predicate_from_binary/1
     ]).
 
--export([
-	get_adjective/3,
-	get_adjective/2
-	]).
-
 % Herald Functions
 init(Opts) ->
 	Dispatch = cowboy_router:compile([  
@@ -94,20 +89,6 @@ websocket_terminate(_Reason, _Req, _State) ->
 	ok.
 
 % Utils 
--spec get_adjective(binary(), dict()) -> binary() | undefined.
-get_adjective(Key, Dict) ->
-	get_adjective(Key, Dict, undefined).
-
--spec get_adjective(binary(), dict(), any()) -> binary() | undefined.
-get_adjective(Key, Dict, Default) ->
-	case dict:is_key(Key, Dict) of
-		true ->
-			[V] = dict:fetch(Key, Dict);
-		_ -> 
-			V = Default
-	end,
-	V.
-
 priv_dir(App) ->
     case code:priv_dir(App) of
         {error, bad_name} ->

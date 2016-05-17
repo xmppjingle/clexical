@@ -28,8 +28,8 @@ basic_parse_test() ->
     L = ws_herald:letter_from_binary(Bin),
     ?assert(L /= undefined),
     #letter{predicates=[#predicate{adjectives=Adjectives}|_]}=L,
-    ?assert(<<"case">> == ws_herald:get_adjective(<<"good">>, Adjectives)),
-    ?assert(undefined == ws_herald:get_adjective(<<"goodDeeds">>, Adjectives)),
+    ?assert(<<"case">> == clexical:get_adjective(<<"good">>, Adjectives)),
+    ?assert(undefined == clexical:get_adjective(<<"goodDeeds">>, Adjectives)),
     [P|_] = L#letter.predicates, 
     K = ws_herald:excerpts(P),
     ?assert(K /= undefined).
