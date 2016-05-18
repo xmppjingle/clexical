@@ -36,7 +36,7 @@ end).
 init(Opts) ->
 	Dispatch = cowboy_router:compile([  
       {'_', [  
-      	{"/", clexical:get_option(http_handler, Opts, undefined), Opts},
+      	{"/api/[...]", clexical:get_option(http_handler, Opts, undefined), Opts},
         {"/static/", cowboy_static, {file, priv_dir(clexical), "index.html"}},
         {"/websocket", ws_herald, []}
       ]}  
