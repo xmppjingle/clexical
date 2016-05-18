@@ -17,8 +17,6 @@ end).
     exmpp_xml:remove_whitespaces_deeply(lists:nth(1, exmpp_xml:parse_document(XML,[{names_as_atom, true}])))  
 end). 
 
-% -record(ws_state, {reactive_vassal}).
-
 -export([
 	init/3,
     websocket_init/3, websocket_handle/3,
@@ -38,7 +36,8 @@ end).
 init(Opts) ->
 	Dispatch = cowboy_router:compile([  
       {'_', [  
-        {"/", cowboy_static, {file, priv_dir(clexical), "index.html"}},
+      	{"/", clexical:get_option(http_handler, Opts, undefined), Opts},
+        {"/static/", cowboy_static, {file, priv_dir(clexical), "index.html"}},
         {"/websocket", ws_herald, []}
       ]}  
     ]),  
