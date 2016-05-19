@@ -5,10 +5,12 @@
 
 -export([
     proclaim/1,
-    excerpt/1,
+    excerpts/1,
     curb/2,
     recall/1,
-    work/1,
+    work/2,
+    letter_from_binary/1,
+    to_binary/1,
     init/1
     ]).
 
@@ -16,7 +18,7 @@
 
 -define(CONFIG, [
     {clexical, [
-        {herald, {?MODULE, [{port, 8082}]}},
+        {herald, {?MODULE, [{port, 8084}]}},
         {scribe, {?MODULE, []}},
         {vassal, {?MODULE, []}}
         ]}
@@ -48,9 +50,9 @@ end_per_suite(_Config) ->
     ok.
 
 single_execution() ->
-    News = #letter{predicates=[?PRED("1","set",{adverb, <<"purchased">>},[])]},
+    News = #letter{predicates=[?PRED("1","set",{preposition, <<"purchased">>},[])]},
     lager:debug("News: ~p~n", [News]),
-    Letter= #letter{predicates=[?PRED("1","set",{verb, <<"offer">>},[?PRED("1","set",{adverb, <<"purchased">>},[?PRED("1","set",{verb, <<"celleb">>},[])])])]},
+    Letter= #letter{predicates=[?PRED("1","set",{verb, <<"offer">>},[?PRED("1","set",{preposition, <<"purchased">>},[?PRED("1","set",{verb, <<"celleb">>},[])])])]},
 	gen_server:call(clexical, {recite, Letter}),
     timer:sleep(500),
     gen_server:call(clexical, {attend, News}),
@@ -65,17 +67,23 @@ curb(K, V) ->
     ok.
 
 recall(K) ->
-    V=?PRED("1","set",{adverb, purchased},[?PRED("1","set",{verb, <<"celleb">>},[])]),
+    V=?PRED("1","set",{preposition, purchased},[?PRED("1","set",{verb, <<"celleb">>},[])]),
     lager:debug("Test Recall: ~p -> ~p~n", [K, V]),
     V.
 
-excerpt(#predicate{abstract=E}) ->
+excerpts(#predicate{abstract=E}) ->
     lager:debug("Test Read Excerpt: ~p ~n", [E]),
-    #letter{predicates=E}.
+    E.
 
-work(#predicate{}=P)->
-    lager:debug("Test Work: ~p ~n", [P]),
+work(#letter{}=L, _)->
+    lager:debug("Test Work: ~p ~n", [L]),
     ok.    
+
+letter_from_binary(_) ->
+    undefined.
+
+to_binary(_) ->
+    undefined.
 
 init(_Opts) ->
     ok.

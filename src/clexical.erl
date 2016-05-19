@@ -29,6 +29,11 @@
     attend/1
 ]).
 
+-export([
+    get_adjective/3,
+    get_adjective/2
+    ]).
+
 start_link(Herald, Scribe, Vassal) ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [Herald, Scribe, Vassal], []).
 
@@ -53,16 +58,16 @@ handle_cast(_Msg, State) ->
 handle_call(fresh_id, _From, #state{lastid=LID}=State) ->
     ID = LID + 1,
     {reply, erlang:integer_to_binary(ID), State#state{lastid=ID}};
-handle_call({recite, #letter{}=Letter}, _From, State) ->
-    lager:info("Recite Letter: ~p~n", [Letter]),
+handle_call({recite, #letter{}=Letter}, _From, #state{herald=Herald}=State) ->
+    lager:debug("Recite Letter: ~p~n", [Herald:to_binary(Letter)]),
     spawn(?MODULE, pronounce, [Letter, State]),
     {reply, ok, State};
-handle_call({attend, #letter{}=Letter}, _From, State) ->
-    lager:info("Hear Letter: ~p~n", [Letter]),
+handle_call({attend, #letter{}=Letter}, _From, #state{herald=Herald}=State) ->
+    lager:debug("Hear Letter: ~p~n", [Herald:to_binary(Letter)]),
     spawn(?MODULE, hear, [Letter, State]),
     {reply, ok, State};    
-handle_call({proclaim, #letter{}=Letter}, _From, State) ->
-    lager:info("Proclaim Letter: ~p~n", [Letter]),
+handle_call({proclaim, #letter{}=Letter}, _From, #state{herald=Herald}=State) ->
+    lager:debug("Proclaim Letter: ~p~n", [Herald:to_binary(Letter)]),
     spawn(?MODULE, proclaim, [Letter, State]),
     {reply, ok, State};
 handle_call(Info, _From, _State) ->
@@ -84,7 +89,6 @@ recite(#letter{}=L) ->
 
 -spec attend(#letter{}) -> any().
 attend(#letter{}=L) ->
-    lager:info("Attend Letter: ~p~n", [L]),
     gen_server:call(clexical, {attend, L}).
 
 -spec proclaim(#letter{}) -> any().
@@ -92,59 +96,74 @@ proclaim(#letter{}=L) ->
     gen_server:call(clexical, {proclaim, L}).
 
 -spec pronounce(#letter{}, #state{}) -> any().
-pronounce(#letter{predicates=[#predicate{action={adverb,_}}=P|T], sender=Sender}=Letter,  #state{last_predicate=LP}=State) ->
-    case LP of
-        #predicate{id=ID, subject=Subject} ->
-            refrain(P#predicate{id=ID, subject=Subject, author=Sender}, State);
-        _ ->
-            refrain(P#predicate{id=fresh_id(), author=Sender}, State)
-    end,
+pronounce(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter,  #state{last_predicate=LP}=State) ->
+    PP= fill_id(P, LP),
+    refrain(Letter#letter{predicates=[PP]}, State),
     pronounce(Letter#letter{predicates=T}, State);
-pronounce(#letter{predicates=[#predicate{action={verb,_},id=ID}=P|T], sender=Sender}=Letter, State) ->    
-        case ID of
-            <<>> ->
-                say(P#predicate{id=fresh_id(), author=Sender}, State);
-            _ ->
-                say(P#predicate{author=Sender}, State)
-    end,
+pronounce(#letter{predicates=[#predicate{action={verb,_}}=P|T]}=Letter, State) ->    
+    PP = fill_id(P),
+    say(Letter#letter{predicates=[PP]}, State),
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(_, _) ->
     ok. % Empty Minded
 
--spec say(#predicate{}, #state{}) -> any().
-say(#predicate{}=P, #state{scribe=Scribe, vassal=Vassal}=State) ->
-    lager:info("Say: ~p~n", [P]),
-    pronounce(Scribe:excerpt(P), State#state{last_predicate=P}),
-    Vassal:work(P).
-
--spec refrain(#predicate{}, #state{}) -> any().
-refrain(#predicate{}=P, #state{scribe=Scribe}=_State) ->
-    lager:info("Refrain: ~p ~n", [P]),
-    Key = compose_key(P),
-    Scribe:curb(Key, P).
-
 -spec hear(#letter{}, #state{}) -> any().
-hear(#letter{predicates=[#predicate{action={adverb,_}}=P|T], sender=Sender}=Letter, #state{scribe=Scribe}=State) ->
-    lager:info("Hear: ~p ~n", [P]),
+hear(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter, #state{scribe=Scribe, herald=Herald}=State) ->
     case Scribe:recall(compose_key(P)) of
-        undefined -> 
-            E = Scribe:recall(compose_key(P#predicate{adjectives=[], author=Sender}));
-        E = #predicate{} ->
-            ok
+        #predicate{}=PP ->
+            pk;
+        _ ->
+            PP = Scribe:recall(compose_key(P#predicate{adjectives=[]}))
     end,
-    Excerpt = Scribe:excerpt(E),
-    pronounce(Excerpt, State),
+    lager:info("Recall: ~p~n", [PP]),
+    pronounce(Letter#letter{predicates=Herald:excerpts(PP)}, State#state{last_predicate=P}),
     hear(Letter#letter{predicates=T}, State);
 hear(_, _) ->    
     ok. % We don't take actions based on what we hear
 
+% King's Functions
+
+-spec say(#letter{}, #state{}) -> any().
+say(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{herald=Herald, vassal=Vassal, last_predicate=LP}=State) ->
+    lager:info("Say: ~p~n", [Herald:to_binary(Letter)]),
+    pronounce(Letter#letter{predicates=Herald:excerpts(P)}, State#state{last_predicate=P}),
+    Vassal:work(Letter#letter{predicates=[P]}, LP);
+say(_,_) ->
+    ok.
+
+-spec refrain(#letter{}, #state{}) -> any().
+refrain(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{herald=Herald, scribe=Scribe}=_State) ->
+    Key = compose_key(P),
+    lager:info("Refrain[~p]: ~p ~n", [Key, Herald:to_binary(Letter)]),    
+    Scribe:curb(Key, P);
+refrain(_,_) ->
+    ok.
+
 -spec proclaim(#letter{}, #state{}) -> any().
-proclaim(#letter{}=Letter, #state{herald=Herald}) ->
+proclaim(#letter{predicates=[#predicate{}|_]}=Letter, #state{herald=Herald}) ->
+    lager:info("Proclaim: ~p ~n", [Herald:to_binary(Letter)]),
     Herald:proclaim(Letter);
 proclaim(_, _) ->    
     ok. % We don't take actions based on what we don't know
 
 % Utils Functions
+
+-spec fill_id(#predicate{}) -> #predicate{}.
+fill_id(#predicate{id= <<>>}=P) ->
+    P#predicate{id=fresh_id()};
+fill_id(#predicate{}=P) ->
+    P.
+
+-spec fill_id(#predicate{}, #predicate{}|undefined) -> #predicate{}.
+fill_id(#predicate{id= <<>>}=P, undefined) ->
+    P#predicate{id=fresh_id()};
+fill_id(#predicate{id= <<>>, subject= <<>>}=P, #predicate{id=ID, subject=Subject}) ->
+    fill_id(P#predicate{id=ID, subject=Subject});
+fill_id(#predicate{id= <<>>}=P, #predicate{id=ID}) ->
+    fill_id(P#predicate{id=ID});
+fill_id(#predicate{}=P, _) ->
+    P.
+
 -spec fresh_id() -> binary().
 fresh_id() ->
     gen_server:call(clexical, fresh_id).
@@ -166,3 +185,17 @@ get_option(Key, Opts, Default) ->
         _ ->
             Default
     end.
+
+-spec get_adjective(binary(), dict()) -> binary() | undefined.
+get_adjective(Key, Dict) ->
+    get_adjective(Key, Dict, undefined).
+
+-spec get_adjective(binary(), dict(), any()) -> binary() | undefined.
+get_adjective(Key, Dict, Default) ->
+    case dict:is_key(Key, Dict) of
+        true ->
+            [V] = dict:fetch(Key, Dict);
+        _ -> 
+            V = Default
+    end,
+    V.

@@ -1,4 +1,4 @@
--module(mnesia_mind).
+-module(mnesia_scribe).
 -behaviour(scribe).
 
 -include("../include/clexical.hrl").
@@ -9,8 +9,7 @@
 -export([
 	init/1,
 	curb/2,
-	recall/1,
-	excerpt/1	
+	recall/1
 	]).
 
 -spec init(Opts :: any()) -> ok|error.
@@ -21,20 +20,16 @@ init(_Opts) ->
 -spec curb(Seal :: binary(), #predicate{}) -> any().
 curb(Seal, #predicate{}=Predicate) when is_binary(Seal) -> 
 	mnesia:dirty_write(#envelope{seal=Seal, predicate=Predicate});
-curb(_, _) ->
+curb(_K, _P) ->
+	lager:error("Invalid Seal[~p] or Predicate: ~p", [_K, _P]),
 	undefined.
 
 -spec recall(binary()) -> #predicate{}|undefined.
 recall(ID) ->
 	case mnesia:dirty_read(envelope, ID) of
 		[#envelope{predicate=P}|_] ->
-			mnesia:dirty_delete(envelope, ID),
+			% mnesia:dirty_delete(envelope, ID),
 			P;
 		_ ->
 			undefined
 	end.
-
--spec excerpt(#predicate{}) -> #letter{}|undefined.
-excerpt(undefined) -> undefined;
-excerpt(#predicate{}=P) ->
-	xml_parser:excerpt_from_predicate(P).

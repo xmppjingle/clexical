@@ -23,6 +23,20 @@ end).
     end    
 end).
 
+-define(start_ranch(), begin
+    case lists:keyfind(ranch, 1, application:loaded_applications()) of
+        false ->
+            case whereis(ranch) of
+                undefined ->
+                    application:start(ranch);
+                _ ->
+                    ok
+            end;
+        _ ->
+            ok
+    end    
+end).
+
 -define(meck_confetti(Config), begin
     case whereis(confetti) of
         undefined ->
