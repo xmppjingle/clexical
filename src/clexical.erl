@@ -111,7 +111,7 @@ pronounce(_, _) ->
 hear(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter, #state{scribe=Scribe, herald=Herald}=State) ->
     case Scribe:recall(compose_key(P)) of
         #predicate{}=PP ->
-            pk;
+            ok;
         _ ->
             PP = Scribe:recall(compose_key(P#predicate{adjectives=[]}))
     end,
