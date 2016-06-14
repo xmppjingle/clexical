@@ -31,7 +31,10 @@
 
 -export([
     get_adjective/3,
-    get_adjective/2
+    get_adjective/2,
+    fill_id/1,
+    fill_id/2,
+    fill_ids/2
     ]).
 
 start_link(Herald, Scribe, Vassal) ->
@@ -147,6 +150,10 @@ proclaim(_, _) ->
     ok. % We don't take actions based on what we don't know
 
 % Utils Functions
+
+-spec fill_ids([#predicate{}], #predicate{}) -> [#predicate{}]|[].
+fill_ids(PS, LP) ->
+    lists:map(fun(P) -> fill_id(P, LP) end, PS).
 
 -spec fill_id(#predicate{}) -> #predicate{}.
 fill_id(#predicate{id= <<>>}=P) ->
