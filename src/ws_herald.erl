@@ -159,14 +159,3 @@ get_kind(Name) ->
         _ ->
             verb
     end.
-
-fill_ids(PS, LP) ->
-	lists:map(fun(P) -> fill_id(P, LP) end, PS).
-
-fill_id(#predicate{id= <<>>, subject= <<>>}=P, #predicate{id=ID, subject=Subject}) ->
-    P#predicate{id=ID, subject=Subject};
-fill_id(#predicate{id= <<>>}=P, #predicate{id=ID}) ->
-    P#predicate{id=ID};
-fill_id(#predicate{}=P, _) ->
-    P.
-

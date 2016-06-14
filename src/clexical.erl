@@ -130,7 +130,9 @@ hear(_, _) ->
 say(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{herald=Herald, vassal=Vassal, last_predicate=LP}=State) ->
     lager:info("Say: ~p~n", [Herald:to_binary(Letter)]),
     pronounce(Letter#letter{predicates=Herald:excerpts(P)}, State#state{last_predicate=P}),
-    Vassal:work(Letter#letter{predicates=[P]}, LP);
+    Reply = Vassal:work(Letter#letter{predicates=[P]}, LP),
+    hear(Reply, State),
+    proclaim(Reply, State);
 say(_,_) ->
     ok.
 
