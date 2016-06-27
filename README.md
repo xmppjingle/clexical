@@ -1,2 +1,2 @@
-# clexical
-Event Driven Lexical Orchestrator
+# Clexical
+Event Driven Lexical Interpreter
