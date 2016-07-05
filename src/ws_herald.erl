@@ -29,7 +29,8 @@ end).
 	excerpts/1,
 	letter_from_binary/1,
 	to_binary/1,
-	predicate_from_binary/1
+	predicate_from_binary/1,
+	process_letter/1
     ]).
 
 % Herald Functions
@@ -65,16 +66,7 @@ websocket_init(_TransportName, Req, _Opts) ->
 websocket_handle({text, Msg}, Req, State) ->
 	L = letter_from_binary(Msg),
 	Letter = L#letter{author=self()},
-	case Letter of
-		#letter{type = decree} -> 
-			gen_server:call(clexical, {recite, Letter}),
-			Reply = <<"<OK/>">>;
-		#letter{type = bulletin} -> 
-			gen_server:call(clexical, {attend, Letter}),
-			Reply = <<"<OK/>">>;
-		_ ->
-			Reply = <<"<Error/>">>
-	end,
+	Reply = process_letter(Letter),
 	{reply, {text, Reply}, Req, State};
 websocket_handle(_Data, Req, State) ->
 	{ok, Req, State}.
@@ -159,3 +151,15 @@ get_kind(Name) ->
         _ ->
             verb
     end.
+
+process_letter(Letter) ->
+	case Letter of
+		#letter{type = decree} -> 
+			gen_server:call(clexical, {recite, Letter}),
+			<<"<OK/>">>;
+		#letter{type = bulletin} -> 
+			gen_server:call(clexical, {attend, Letter}),
+			<<"<OK/>">>;
+		_ ->
+			<<"<Error/>">>
+	end.
