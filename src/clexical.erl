@@ -54,6 +54,18 @@ handle_info(Record, State) ->
     lager:debug("Unknown Info Request: ~p~n", [Record]),
     {noreply, State}.
 
+handle_cast({recite, #letter{}=Letter},#state{herald=Herald}=State) ->
+    lager:debug("Recite Letter: ~p~n", [Herald:to_binary(Letter)]),
+    spawn(?MODULE, pronounce, [Letter, State]),
+    {noreply, State};
+handle_cast({attend, #letter{}=Letter}, #state{herald=Herald}=State) ->
+    lager:debug("Hear Letter: ~p~n", [Herald:to_binary(Letter)]),
+    spawn(?MODULE, hear, [Letter, State]),
+    {noreply, State};    
+handle_cast({proclaim, #letter{}=Letter}, #state{herald=Herald}=State) ->
+    lager:debug("Proclaim Letter: ~p~n", [Herald:to_binary(Letter)]),
+    spawn(?MODULE, proclaim, [Letter, State]),
+    {noreply, State};
 handle_cast(_Msg, State) ->
     lager:debug("Received Cast: ~p~n", [_Msg]),
     {noreply, State}.
@@ -61,18 +73,6 @@ handle_cast(_Msg, State) ->
 handle_call(fresh_id, _From, #state{lastid=LID}=State) ->
     ID = LID + 1,
     {reply, erlang:integer_to_binary(ID), State#state{lastid=ID}};
-handle_call({recite, #letter{}=Letter}, _From, #state{herald=Herald}=State) ->
-    lager:debug("Recite Letter: ~p~n", [Herald:to_binary(Letter)]),
-    spawn(?MODULE, pronounce, [Letter, State]),
-    {reply, ok, State};
-handle_call({attend, #letter{}=Letter}, _From, #state{herald=Herald}=State) ->
-    lager:debug("Hear Letter: ~p~n", [Herald:to_binary(Letter)]),
-    spawn(?MODULE, hear, [Letter, State]),
-    {reply, ok, State};    
-handle_call({proclaim, #letter{}=Letter}, _From, #state{herald=Herald}=State) ->
-    lager:debug("Proclaim Letter: ~p~n", [Herald:to_binary(Letter)]),
-    spawn(?MODULE, proclaim, [Letter, State]),
-    {reply, ok, State};
 handle_call(Info, _From, _State) ->
     lager:info("Received Call: ~p~n", [Info]),
     {reply, ok, _State}.

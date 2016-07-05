@@ -155,10 +155,10 @@ get_kind(Name) ->
 process_letter(Letter) ->
 	case Letter of
 		#letter{type = decree} -> 
-			gen_server:call(clexical, {recite, Letter}),
+			clexical:recite(Letter),
 			<<"<OK/>">>;
 		#letter{type = bulletin} -> 
-			gen_server:call(clexical, {attend, Letter}),
+			clexical:attend(Letter),
 			<<"<OK/>">>;
 		_ ->
 			<<"<Error/>">>
