@@ -105,7 +105,7 @@ pronounce(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter,  
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(#letter{predicates=[#predicate{action={verb,_}}=P|T]}=Letter, State) ->    
     PP = fill_id(P),
-    say(Letter#letter{predicates=[PP]}, State),
+    spawn(?MODULE, say, [Letter#letter{predicates=[PP]}, State]),
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(_, _) ->
     ok. % Empty Minded
