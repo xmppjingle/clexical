@@ -88,15 +88,15 @@ code_change(_OldVsn, State, _Extra) ->
 
 -spec recite(#letter{}) -> any().
 recite(#letter{}=L) ->
-    gen_server:call(clexical, {recite, L}).
+    gen_server:cast(clexical, {recite, L}).
 
 -spec attend(#letter{}) -> any().
 attend(#letter{}=L) ->
-    gen_server:call(clexical, {attend, L}).
+    gen_server:cast(clexical, {attend, L}).
 
 -spec proclaim(#letter{}) -> any().
 proclaim(#letter{}=L) ->
-    gen_server:call(clexical, {proclaim, L}).
+    gen_server:cast(clexical, {proclaim, L}).
 
 -spec pronounce(#letter{}, #state{}) -> any().
 pronounce(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter,  #state{last_predicate=LP}=State) ->
