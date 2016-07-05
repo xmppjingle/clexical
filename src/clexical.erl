@@ -26,7 +26,8 @@
     get_option/3,
     proclaim/1,
     recite/1,
-    attend/1
+    attend/1,
+    say/2
 ]).
 
 -export([
