@@ -205,7 +205,7 @@ get_adjective(Key, Map) ->
 get_adjective(Key, Map, Default) ->
     case maps:is_key(Key, Map) of
         true ->
-            [V] = maps:get(Key, Map);
+            V = maps:get(Key, Map);
         _ -> 
             V = Default
     end,

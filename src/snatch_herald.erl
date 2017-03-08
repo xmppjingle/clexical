@@ -1,5 +1,6 @@
 -module(snatch_herald).
 -include("../include/clexical.hrl").
+-include_lib("xmpp.hrl").
 
 -export([
 	init/1,
@@ -11,8 +12,11 @@
 	process_letter/1
 	]).
 
+-define(OK, <<"<ok/>">>).
+-define(ERROR, <<"<error/>">>).
+
 -spec init(Opts::any()) -> any().
-init(Opts) ->
+init(_Opts) ->
 	application:start(fast_xml),
 	ok.
 
@@ -31,9 +35,9 @@ proclaim(#letter{author=Author}=L) ->
 -spec letter_from_binary(Binary :: binary()) -> undefined|#letter{}.
 letter_from_binary(Bin) ->
 	case fxml_stream:parse_element(Bin) of
-		#xmlel{children = Children, attrs = Attrs} = Elem ->
+		#xmlel{name = Type, children = Children, attrs = Attrs} ->
 			P = lists:map(fun(E) -> predicate_from_elem(E) end, Children),
-			#letter{type=Type, predicates=P, author=fxml:get_attribute(<<"author">>, Attrs)};
+			#letter{type = Type, predicates=P, author=fxml:get_attr(<<"author">>, Attrs)};
 		_R ->
 			lager:info("Invalid Letter Type: ~p ~n", [_R]),
 			undefined
@@ -74,9 +78,28 @@ predicate_from_binary(Bin) ->
 			undefined
 	end.	
 
-predicate_from_elem(#xmlel{name = Name, attrs = Attribs}=E) ->
-	ID = exmpp_xml:get_attribute(E, <<"id">>, <<>>),
-	Subject = exmpp_xml:get_attribute(E, <<"subject">>, <<>>),
+predicate_from_elem(#xmlel{name = ActionName, attrs = Attribs}=E) ->
+	ID = fxml:get_attr(<<"id">>, Attribs),
+	Subject = fxml:get_attr(<<"subject">>, Attribs),
 	Adjectives = maps:from_list(Attribs),
-	ActionName = erlang:atom_to_binary(Name, ?ENCODE),
 	#predicate{id=ID, subject=Subject, action={get_kind(ActionName), ActionName}, adjectives=Adjectives, abstract=E}.
+
+get_kind(Name) ->
+    case Name of
+        <<"on",_/binary>> ->
+            preposition;
+        _ ->
+            verb
+    end.
+
+process_letter(Letter) ->
+	case Letter of
+		#letter{type = decree} -> 
+			clexical:recite(Letter),
+			?OK;
+		#letter{type = bulletin} -> 
+			clexical:attend(Letter),
+			?OK;
+		_ ->
+			?ERROR
+	end.
