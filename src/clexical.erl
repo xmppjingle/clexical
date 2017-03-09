@@ -180,9 +180,9 @@ fresh_id() ->
     gen_server:call(clexical, fresh_id).
 
 -spec compose_key(#predicate{}) -> binary().
-compose_key(#predicate{adjectives={dict, _, _, _, _, _, _, _, _}=Dict}=P) ->
+compose_key(#predicate{adjectives=#{}=Map}=P) ->
     BareKey = compose_key(P#predicate{adjectives=[]}),
-    Suffix = dict:fold(fun(_K, [V], A) -> <<A/binary, V/binary>> end, <<>>, Dict),
+    Suffix = maps:fold(fun(_K, [V], A) -> <<A/binary, V/binary>> end, <<>>, Map),
     <<BareKey/binary, Suffix/binary>>;
 compose_key(#predicate{action={_,BName}, subject=Subject, id=ID}) ->
     <<Subject/binary, ID/binary, BName/binary>>;
@@ -197,15 +197,15 @@ get_option(Key, Opts, Default) ->
             Default
     end.
 
--spec get_adjective(binary(), dict()) -> binary() | undefined.
-get_adjective(Key, Dict) ->
-    get_adjective(Key, Dict, undefined).
+-spec get_adjective(binary(), map()) -> binary() | undefined.
+get_adjective(Key, Map) ->
+    get_adjective(Key, Map, undefined).
 
--spec get_adjective(binary(), dict(), any()) -> binary() | undefined.
-get_adjective(Key, Dict, Default) ->
-    case dict:is_key(Key, Dict) of
+-spec get_adjective(binary(), map(), any()) -> binary() | undefined.
+get_adjective(Key, Map, Default) ->
+    case maps:is_key(Key, Map) of
         true ->
-            [V] = dict:fetch(Key, Dict);
+            V = maps:get(Key, Map);
         _ -> 
             V = Default
     end,

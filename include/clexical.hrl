@@ -6,7 +6,7 @@
 	id = <<>> :: binary(),
 	subject = <<>> :: binary(), 
 	action :: {kind(), binary()}, 
-	adjectives = undefined :: dict()|undefined, 
+	adjectives = undefined :: map()|undefined, 
 	abstract = undefined :: any(), 
 	author = undefined :: any()
 	}).
