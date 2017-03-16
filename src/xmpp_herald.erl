@@ -1,4 +1,4 @@
--module(snatch_herald).
+-module(xmpp_herald).
 -include("../include/clexical.hrl").
 -include_lib("xmpp.hrl").
 
@@ -17,7 +17,7 @@
 
 -spec init(Opts::any()) -> any().
 init(_Opts) ->
-	application:start(fast_xml),
+	application:start(xmpp),
 	ok.
 
 -spec proclaim(#letter{}) -> ok|error.
