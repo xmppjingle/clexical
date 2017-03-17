@@ -12,6 +12,11 @@
 	process_letter/1
 	]).
 
+-export([
+	get_kind/1,
+	get_type/1
+	]).
+
 -define(OK, <<"<ok/>">>).
 -define(ERROR, <<"<error/>">>).
 
@@ -34,14 +39,15 @@ proclaim(#letter{author=Author}=L) ->
 
 -spec letter_from_binary(Binary :: binary()) -> undefined|#letter{}.
 letter_from_binary(Bin) ->
-	case fxml_stream:parse_element(Bin) of
-		#xmlel{name = Type, children = Children, attrs = Attrs} ->
-			P = lists:map(fun(E) -> predicate_from_elem(E) end, Children),
-			#letter{type = Type, predicates=P, author=fxml:get_attr(<<"author">>, Attrs)};
-		_R ->
-			lager:info("Invalid Letter Type: ~p ~n", [_R]),
-			undefined
-	end.
+	letter_from_xmlel( fxml_stream:parse_element(Bin) ).
+
+-spec letter_from_xmlel(#xmlel{}) -> undefined|#letter{}.
+letter_from_xmlel(#xmlel{name = Type, children = Children, attrs = Attrs}) ->
+	P = lists:map(fun(E) -> predicate_from_elem(E) end, Children),
+	#letter{type = get_type(Type), predicates=P, author=fxml:get_attr(<<"from">>, Attrs)};
+letter_from_xmlel(_R) -> 
+	lager:info("Invalid Letter Type: ~p ~n", [_R]),
+	undefined.
 
 -spec to_binary(#letter{}) -> undefined|binary().
 to_binary(#letter{predicates=[], type=Type}) ->
@@ -84,13 +90,15 @@ predicate_from_elem(#xmlel{name = ActionName, attrs = Attribs}=E) ->
 	Adjectives = maps:from_list(Attribs),
 	#predicate{id=ID, subject=Subject, action={get_kind(ActionName), ActionName}, adjectives=Adjectives, abstract=E}.
 
-get_kind(Name) ->
-    case Name of
-        <<"on",_/binary>> ->
-            preposition;
-        _ ->
-            verb
-    end.
+get_type(<<"iq">>) ->
+	decree;
+get_type(<<"presence">>) ->
+	bulletin.
+
+get_kind(<<"on",_/binary>>) ->
+	preposition;
+get_kind(_) ->
+    verb.
 
 process_letter(Letter) ->
 	case Letter of
