@@ -18,7 +18,6 @@
 
 %% API Functions
 -export([
-    fresh_id/0,
     pronounce/2,
     hear/2,
     proclaim/2,
@@ -71,9 +70,6 @@ handle_cast(_Msg, State) ->
     lager:debug("Received Cast: ~p~n", [_Msg]),
     {noreply, State}.
 
-handle_call(fresh_id, _From, #state{lastid=LID}=State) ->
-    ID = LID + 1,
-    {reply, erlang:integer_to_binary(ID), State#state{lastid=ID}};
 handle_call(Info, _From, _State) ->
     lager:info("Received Call: ~p~n", [Info]),
     {reply, ok, _State}.
@@ -161,23 +157,19 @@ fill_ids(PS, LP) ->
 
 -spec fill_id(#predicate{}) -> #predicate{}.
 fill_id(#predicate{id= <<>>}=P) ->
-    P#predicate{id=fresh_id()};
+    P#predicate{id=clexical_id:fresh_id()};
 fill_id(#predicate{}=P) ->
     P.
 
 -spec fill_id(#predicate{}, #predicate{}|undefined) -> #predicate{}.
 fill_id(#predicate{id= ID}=P, undefined) when ID == <<>>; ID == undefined; ID == false ->
-    P#predicate{id=fresh_id()};
+    P#predicate{id=clexical_id:fresh_id()};
 fill_id(#predicate{id= <<>>, subject= <<>>}=P, #predicate{id=ID, subject=Subject}) ->
     fill_id(P#predicate{id=ID, subject=Subject});
 fill_id(#predicate{id= <<>>}=P, #predicate{id=ID}) ->
     fill_id(P#predicate{id=ID});
 fill_id(#predicate{}=P, _) ->
     P.
-
--spec fresh_id() -> binary().
-fresh_id() ->
-    gen_server:call(clexical, fresh_id).
 
 -spec compose_key(#predicate{}) -> binary().
 compose_key(#predicate{adjectives=#{}=Map}=P) ->

@@ -86,7 +86,7 @@ predicate_from_binary(Bin) ->
 			undefined
 	end.	
 
-predicate_from_elem(#xmlel{name = ActionName, attrs = Attribs}=E) ->
+predicate_from_elem(#xmlel{name = ActionName, attrs = Attribs} = E) ->
 	ID = get_attr(<<"id">>, Attribs),
 	Subject = get_attr(<<"subject">>, Attribs),
 	Adjectives = maps:from_list(Attribs),
