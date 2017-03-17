@@ -45,7 +45,7 @@ letter_from_binary(Bin) ->
 
 -spec letter_from_xmlel(#xmlel{}) -> undefined|#letter{}.
 letter_from_xmlel(#xmlel{name = Type, children = Children, attrs = Attrs}) ->
-	P = [E || E <- lists:map(fun(E) -> predicate_from_elem(E) end, Children), E /= undefined],
+	P = [Predicate || Predicate <- lists:map(fun(E) -> predicate_from_elem(E) end, Children), Predicate /= undefined],
 	#letter{type = get_type(Type), predicates=P, author=get_attr(<<"from">>, Attrs)};
 letter_from_xmlel(_R) -> 
 	lager:info("Invalid Letter Type: ~p ~n", [_R]),
