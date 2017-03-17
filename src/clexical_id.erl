@@ -56,4 +56,4 @@ code_change(_OldVsn, State, _Extra) ->
 
 -spec fresh_id() -> binary().
 fresh_id() ->
-    gen_server:call(clexical, fresh_id).
+    gen_server:call(?MODULE, fresh_id).
