@@ -14,7 +14,8 @@
 
 -export([
 	get_kind/1,
-	get_type/1
+	get_type/1,
+	letter_from_xmlel/1
 	]).
 
 -define(OK, <<"<ok/>">>).
