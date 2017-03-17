@@ -20,8 +20,8 @@
     fresh_id/0
 ]).
 
-start_link(_) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link(_Opts) ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [_Opts], []).
 
 stop() ->
     gen_server:call(?MODULE, stop).

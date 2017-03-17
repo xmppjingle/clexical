@@ -24,6 +24,6 @@ start_link([Herald, Scribe, Vassal]) ->
 
 init([Herald, Scribe, Vassal]) ->
     {ok, {{one_for_one, 5, 10}, [
-    	?CHILD(clexical_id, []),
+    	?CHILD(clexical_id, [[]]),
     	?CHILD(clexical, [Herald, Scribe, Vassal])
     ]}}.
