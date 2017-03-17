@@ -15,7 +15,8 @@
 -export([
 	get_kind/1,
 	get_type/1,
-	letter_from_xmlel/1
+	letter_from_xmlel/1,
+	get_attr/2
 	]).
 
 -define(OK, <<"<ok/>">>).
@@ -45,7 +46,7 @@ letter_from_binary(Bin) ->
 -spec letter_from_xmlel(#xmlel{}) -> undefined|#letter{}.
 letter_from_xmlel(#xmlel{name = Type, children = Children, attrs = Attrs}) ->
 	P = [E || E <- lists:map(fun(E) -> predicate_from_elem(E) end, Children), E /= undefined],
-	#letter{type = get_type(Type), predicates=P, author=fxml:get_attr(<<"from">>, Attrs)};
+	#letter{type = get_type(Type), predicates=P, author=get_attr(<<"from">>, Attrs)};
 letter_from_xmlel(_R) -> 
 	lager:info("Invalid Letter Type: ~p ~n", [_R]),
 	undefined.
@@ -86,8 +87,8 @@ predicate_from_binary(Bin) ->
 	end.	
 
 predicate_from_elem(#xmlel{name = ActionName, attrs = Attribs}=E) ->
-	ID = fxml:get_attr(<<"id">>, Attribs),
-	Subject = fxml:get_attr(<<"subject">>, Attribs),
+	ID = get_attr(<<"id">>, Attribs),
+	Subject = get_attr(<<"subject">>, Attribs),
 	Adjectives = maps:from_list(Attribs),
 	#predicate{id=ID, subject=Subject, action={get_kind(ActionName), ActionName}, adjectives=Adjectives, abstract=E};
 predicate_from_elem({xmlcdata, <<"\n">>}) -> undefined;
@@ -105,6 +106,14 @@ get_kind(<<"on",_/binary>>) ->
 	preposition;
 get_kind(_) ->
     verb.
+
+get_attr(ID, Attribs) ->
+	case get_attr(ID, Attribs) of
+		{value, Value} -> 
+			Value;
+		_ ->
+			undefined
+	end.
 
 process_letter(Letter) ->
 	case Letter of
