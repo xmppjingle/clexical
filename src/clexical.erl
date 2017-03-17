@@ -57,15 +57,15 @@ handle_info(Record, State) ->
 
 handle_cast({recite, #letter{}=Letter},#state{herald=Herald}=State) ->
     lager:debug("Recite Letter: ~p~n", [Herald:to_binary(Letter)]),
-    spawn(?MODULE, pronounce, [Letter, State]),
+    spawn_monitor(?MODULE, pronounce, [Letter, State]),
     {noreply, State};
 handle_cast({attend, #letter{}=Letter}, #state{herald=Herald}=State) ->
     lager:debug("Hear Letter: ~p~n", [Herald:to_binary(Letter)]),
-    spawn(?MODULE, hear, [Letter, State]),
+    spawn_monitor(?MODULE, hear, [Letter, State]),
     {noreply, State};    
 handle_cast({proclaim, #letter{}=Letter}, #state{herald=Herald}=State) ->
     lager:debug("Proclaim Letter: ~p~n", [Herald:to_binary(Letter)]),
-    spawn(?MODULE, proclaim, [Letter, State]),
+    spawn_monitor(?MODULE, proclaim, [Letter, State]),
     {noreply, State};
 handle_cast(_Msg, State) ->
     lager:debug("Received Cast: ~p~n", [_Msg]),
@@ -107,7 +107,7 @@ pronounce(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter,  
 pronounce(#letter{predicates=[#predicate{action={verb,_}}=P|T]}=Letter, State) ->    
     PP = fill_id(P),
     ID = PP#predicate.id,
-    register(binary_to_atom(<<"work_", ID/binary>>, utf8), spawn(?MODULE, say, [Letter#letter{predicates=[PP]}, State])),
+    register(binary_to_atom(<<"work_", ID/binary>>, utf8), spawn_monitor(?MODULE, say, [Letter#letter{predicates=[PP]}, State])),
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(_, _) ->
     ok. % Empty Minded
