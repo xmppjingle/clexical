@@ -16,6 +16,7 @@
 	get_kind/1,
 	get_type/1,
 	letter_from_xmlel/1,
+	predicate_from_elem/1,
 	get_attr/2
 	]).
 
@@ -108,7 +109,7 @@ get_kind(_) ->
     verb.
 
 get_attr(ID, Attribs) ->
-	case get_attr(ID, Attribs) of
+	case fxml:get_attr(ID, Attribs) of
 		{value, Value} -> 
 			Value;
 		_ ->

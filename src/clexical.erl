@@ -103,7 +103,9 @@ pronounce(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter,  
 pronounce(#letter{predicates=[#predicate{action={verb,_}}=P|T]}=Letter, State) ->    
     PP = fill_id(P),
     ID = PP#predicate.id,
-    register(binary_to_atom(<<"work_", ID/binary>>, utf8), spawn_monitor(?MODULE, say, [Letter#letter{predicates=[PP]}, State])),
+    WID = binary_to_atom(<<"work_", ID/binary>>, utf8),
+    PID = spawn_monitor(?MODULE, say, [Letter#letter{predicates=[PP]}, State]),
+    register(WID, PID),
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(_, _) ->
     ok. % Empty Minded
@@ -126,7 +128,7 @@ hear(_, _) ->
 
 -spec say(#letter{}, #state{}) -> any().
 say(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{herald=Herald, vassal=Vassal, last_predicate=LP}=State) ->
-    lager:info("Say: ~p~n", [Herald:to_binary(Letter)]),
+    lager:info("Say: ~p~n", [Letter]),
     pronounce(Letter#letter{predicates=Herald:excerpts(P)}, State#state{last_predicate=P}),
     Reply = Vassal:work(Letter#letter{predicates=[P]}, LP),
     hear(Reply, State),
@@ -156,7 +158,7 @@ fill_ids(PS, LP) ->
     lists:map(fun(P) -> fill_id(P, LP) end, PS).
 
 -spec fill_id(#predicate{}) -> #predicate{}.
-fill_id(#predicate{id= <<>>}=P) ->
+fill_id(#predicate{id = ID} = P) when ID == <<>>; ID == undefined; ID == false ->
     P#predicate{id=clexical_id:fresh_id()};
 fill_id(#predicate{}=P) ->
     P.
