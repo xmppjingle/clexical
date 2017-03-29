@@ -43,7 +43,7 @@
 -record(hdata, {linguist = ?MODULE}).
 
 start_link(Opts) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [Opts], []).
+    gen_server:start_link({local, ?MODULE}, ?MODULE, Opts, []).
 
 -spec init(Opts::any()) -> any().
 init(Opts) ->
