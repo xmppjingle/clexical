@@ -122,6 +122,8 @@ hear(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter, #state
     lager:info("Recall: ~p~n", [PP]),
     pronounce(Letter#letter{predicates=Herald:excerpts(PP)}, State#state{last_predicate=P}),
     hear(Letter#letter{predicates=T}, State);
+hear(#letter{predicates=[#predicate{action={verb,_}}|T]}=Letter, #state{}=State) ->
+    hear(Letter#letter{predicates=T}, State);
 hear(_, _) ->    
     ok. % We don't take actions based on what we hear
 
