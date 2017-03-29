@@ -12,8 +12,8 @@
     handle_call/3,
     handle_cast/2,
     handle_info/2,
-    terminate/2,
-    code_change/3
+    terminate/3,
+    code_change/4
 ]).
 
 %% API Functions
@@ -45,9 +45,9 @@ stop() ->
 
 init([{Herald, HOpts}, {Scribe, SOpts}, {Vassal, VOpts}]) ->
     lager:info(?LOGO,[]),
-    Herald:init(HOpts),
-    Scribe:init(SOpts),
-    Vassal:init(VOpts),    
+    Herald:initialize(HOpts),
+    Scribe:initialize(SOpts),
+    Vassal:initialize(VOpts),
     {ok, #state{herald=Herald, scribe=Scribe, vassal=Vassal}}.
 
 handle_info(Record, State) ->
@@ -74,12 +74,11 @@ handle_call(Info, _From, _State) ->
     lager:info("Received Call: ~p~n", [Info]),
     {reply, ok, _State}.
 
-terminate(_Reason, _State) ->
-    lager:info("Terminated Component.", []),
-    ok.
+terminate(_E, _F, _G) ->
+    lager:debug("Terminating... ~p~n", [?MODULE]), void.
 
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
+code_change(_OldVsn, State, Data, _Extra) ->
+    {ok, State, Data}.
 
 %% Clexical Functions
 
