@@ -48,6 +48,7 @@ start_link(Opts) ->
 -spec init(Opts::any()) -> any().
 init(Opts) ->
 	Linguist = clexical:get_option(linguist, Opts, ?MODULE),
+	lager:info("XMPP Herald Started with: ~p~n", [Opts]),
 	{ok, #hdata{linguist = Linguist}}.
 
 terminate(_, _) ->
@@ -66,7 +67,7 @@ handle_cast(_Cast, S) ->
     {noreply, S}.
 
 handle_info({Pid, linguist} = Cast, #hdata{linguist = Linguist} = S) ->
-    lager:debug("Cast: ~p  ~n", [Cast]),
+    lager:debug("Info: ~p  ~n", [Cast]),
     Pid ! {linguist, Linguist},
     {noreply, S};
 

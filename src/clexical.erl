@@ -12,8 +12,8 @@
     handle_call/3,
     handle_cast/2,
     handle_info/2,
-    terminate/3,
-    code_change/4
+    terminate/2,
+    code_change/3
 ]).
 
 %% API Functions
@@ -48,7 +48,9 @@ init([{Herald, HOpts}, {Scribe, SOpts}, {Vassal, VOpts}]) ->
     Herald:initialize(HOpts),
     Scribe:initialize(SOpts),
     Vassal:initialize(VOpts),
-    {ok, #state{herald=Herald, scribe=Scribe, vassal=Vassal}}.
+    S = #state{herald=Herald, scribe=Scribe, vassal=Vassal},
+    lager:info("Clexical Started with: ~p~n", [S]),
+    {ok, S}.
 
 handle_info(Record, State) ->
     lager:debug("Unknown Info Request: ~p~n", [Record]),
@@ -74,11 +76,12 @@ handle_call(Info, _From, _State) ->
     lager:info("Received Call: ~p~n", [Info]),
     {reply, ok, _State}.
 
-terminate(_E, _F, _G) ->
-    lager:debug("Terminating... ~p~n", [?MODULE]), void.
+terminate(_, _) ->
+    lager:debug("Terminating...~n~p", [?MODULE]),
+    ok.
 
-code_change(_OldVsn, State, Data, _Extra) ->
-    {ok, State, Data}.
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
 
 %% Clexical Functions
 
