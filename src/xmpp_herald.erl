@@ -47,7 +47,7 @@ start_link(Opts) ->
 
 -spec init(Opts::any()) -> any().
 init(Opts) ->
-	Linguist = clexical:get_option(linguist, Opts, ?MODULE),
+	Linguist = proplists:get_value(linguist, Opts, ?MODULE),
 	lager:info("XMPP Herald Started with: ~p~n", [Opts]),
 	{ok, #hdata{linguist = Linguist}}.
 
@@ -89,6 +89,7 @@ get_linguist() ->
 	end.
 
 initialize(Opts) ->
+	lager:debug("Initialize with ~p ~n", [Opts]),
 	start_link(Opts).
 
 -spec proclaim(#letter{}) -> ok|error.

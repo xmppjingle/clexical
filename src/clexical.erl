@@ -22,7 +22,6 @@
     hear/2,
     proclaim/2,
     compose_key/1,
-    get_option/3,
     proclaim/1,
     recite/1,
     attend/1,
@@ -184,14 +183,6 @@ compose_key(#predicate{action={_,BName}, subject=Subject, id=ID}) ->
     <<Subject/binary, ID/binary, BName/binary>>;
 compose_key(_) ->
     <<>>.    
-
-get_option(Key, Opts, Default) ->
-    case lists:keyfind(Key, 1, Opts) of
-        {_K, V} ->
-            V;
-        _ ->
-            Default
-    end.
 
 -spec get_adjective(binary(), map()) -> binary() | undefined.
 get_adjective(Key, Map) ->
