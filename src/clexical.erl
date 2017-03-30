@@ -62,7 +62,7 @@ handle_cast({recite, #letter{}=Letter},#state{herald=Herald}=State) ->
 handle_cast({attend, #letter{}=Letter}, #state{herald=Herald}=State) ->
     lager:debug("Hear Letter: ~p~n", [Herald:to_binary(Letter)]),
     spawn_monitor(?MODULE, hear, [Letter, State]),
-    {noreply, State};    
+    {noreply, State};
 handle_cast({proclaim, #letter{}=Letter}, #state{herald=Herald}=State) ->
     lager:debug("Proclaim Letter: ~p~n", [Herald:to_binary(Letter)]),
     spawn_monitor(?MODULE, proclaim, [Letter, State]),
@@ -101,7 +101,7 @@ pronounce(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter,  
     PP= fill_id(P, LP),
     refrain(Letter#letter{predicates=[PP]}, State),
     pronounce(Letter#letter{predicates=T}, State);
-pronounce(#letter{predicates=[#predicate{action={verb,_}}=P|T]}=Letter, State) ->    
+pronounce(#letter{predicates=[#predicate{action={verb,_}}=P|T]}=Letter, State) ->
     PP = fill_id(P),
     ID = PP#predicate.id,
     WID = binary_to_atom(<<"work_", ID/binary>>, utf8),
@@ -124,7 +124,7 @@ hear(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter, #state
     hear(Letter#letter{predicates=T}, State);
 hear(#letter{predicates=[#predicate{action={verb,_}}|T]}=Letter, #state{}=State) ->
     hear(Letter#letter{predicates=T}, State);
-hear(_, _) ->    
+hear(_, _) ->
     ok. % We don't take actions based on what we hear
 
 % King's Functions
@@ -142,7 +142,7 @@ say(_,_) ->
 -spec refrain(#letter{}, #state{}) -> any().
 refrain(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{herald=Herald, scribe=Scribe}=_State) ->
     Key = compose_key(P),
-    lager:info("Refrain[~p]: ~p ~n", [Key, Herald:to_binary(Letter)]),    
+    lager:info("Refrain[~p]: ~p ~n", [Key, Herald:to_binary(Letter)]),
     Scribe:curb(Key, P);
 refrain(_,_) ->
     ok.
@@ -151,7 +151,7 @@ refrain(_,_) ->
 proclaim(#letter{predicates=[#predicate{}|_]}=Letter, #state{herald=Herald}) ->
     lager:info("Proclaim: ~p ~n", [Herald:to_binary(Letter)]),
     Herald:proclaim(Letter);
-proclaim(_, _) ->    
+proclaim(_, _) ->
     ok. % We don't take actions based on what we don't know
 
 % Utils Functions
@@ -180,12 +180,12 @@ fill_id(#predicate{}=P, _) ->
 compose_key(#predicate{adjectives=#{}=Map}=P) ->
     lager:debug("Predicate ~p ~n", [lager:pr(P, ?MODULE)]),
     BareKey = compose_key(P#predicate{adjectives=[]}),
-    Suffix = maps:fold(fun(_K, [V], A) -> <<A/binary, V/binary>> end, <<>>, Map),
+    Suffix = maps:fold(fun(_K, V, A) -> <<A/binary, V/binary>> end, <<>>, Map),
     <<BareKey/binary, Suffix/binary>>;
 compose_key(#predicate{action={_,BName}, subject=Subject, id=ID}) ->
     <<Subject/binary, ID/binary, BName/binary>>;
 compose_key(_) ->
-    <<>>.    
+    <<>>.
 
 -spec get_adjective(binary(), map()) -> binary() | undefined.
 get_adjective(Key, Map) ->
@@ -196,7 +196,7 @@ get_adjective(Key, Map, Default) ->
     case maps:is_key(Key, Map) of
         true ->
             V = maps:get(Key, Map);
-        _ -> 
+        _ ->
             V = Default
     end,
     V.
