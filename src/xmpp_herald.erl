@@ -3,7 +3,7 @@
 -include_lib("xmpp.hrl").
 -behaviour(gen_server).
 -behaviour(herald).
--behaviour(linguist).
+-behaviour(xmpp_linguist).
 
 %% gen_server callbacks
 -export([
@@ -22,7 +22,6 @@
 	excerpts/1,
 	letter_from_binary/1,
 	to_binary/1,
-	predicate_from_binary/1,
 	process_letter/1
 	]).
 
@@ -111,7 +110,7 @@ letter_from_binary(Bin) ->
 -spec letter_from_xmlel(#xmlel{}) -> undefined|#letter{}.
 letter_from_xmlel(#xmlel{name = Type, children = Children, attrs = Attrs}) ->
 	Linguist = get_linguist(),
-	P = [Predicate || Predicate <- lists:map(fun(E) -> predicate_from_elem(E) end, Children), Predicate /= undefined],
+	P = [Predicate || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E) end, Children), Predicate /= undefined],
 	#letter{type = Linguist:get_envelop_type(Type), predicates=P, author=get_attr(<<"from">>, Attrs)};
 letter_from_xmlel(_R) -> 
 	lager:info("Invalid Letter Type: ~p ~n", [_R]),
@@ -139,18 +138,10 @@ to_binary_([#predicate{abstract=Elem}|T])->
 excerpts(#predicate{abstract=undefined}) ->
 	[];
 excerpts(#predicate{abstract=#xmlel{children = Kin}, author=Author}) ->
-	lists:map(fun(Elem) -> (predicate_from_elem(Elem))#predicate{author=Author} end, Kin);
+	Linguist = get_linguist(),
+	lists:map(fun(Elem) -> (Linguist:predicate_from_elem(Elem))#predicate{author=Author} end, Kin);
 excerpts(_) ->
 	[].
-
-predicate_from_binary(Bin) ->
-	case fxml_stream:parse_element(Bin) of
-		#xmlel{} = Elem ->
-			predicate_from_elem(Elem);
-		_R ->
-			lager:info("Invalid Predicate Type: ~p ~n", [_R]),
-			undefined
-	end.	
 
 predicate_from_elem(#xmlel{name = ActionName, attrs = Attribs} = E) ->
 	ID = get_attr(<<"id">>, Attribs),
