@@ -32,7 +32,7 @@
 
 -export([
 	letter_from_xmlel/1,
-	predicate_from_elem/1,
+	predicate_from_elem/2,
 	get_attr/2
 	]).
 
@@ -111,7 +111,7 @@ letter_from_binary(Bin) ->
 letter_from_xmlel(#xmlel{name = Type, children = Children, attrs = Attrs}) ->
 	Linguist = get_linguist(),
 	Author = get_attr(<<"from">>, Attrs),
-	P = [Predicate || Predicate <- lists:map(fun(E) -> (Linguist:predicate_from_elem(E))#predicate{author=Author} end, Children), Predicate /= undefined],
+	P = [Predicate || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author) end, Children), Predicate /= undefined],
 	#letter{type = Linguist:get_envelop_type(Type), predicates=P, author=Author};
 letter_from_xmlel(_R) -> 
 	lager:info("Invalid Letter Type: ~p ~n", [_R]),
@@ -140,21 +140,21 @@ excerpts(#predicate{abstract=undefined}) ->
 	[];
 excerpts(#predicate{abstract=#xmlel{children = Kin}, author=Author}) ->
 	Linguist = get_linguist(),
-	lists:map(fun(Elem) -> (Linguist:predicate_from_elem(Elem))#predicate{author=Author} end, Kin);
+	lists:map(fun(Elem) -> Linguist:predicate_from_elem(Elem, Author) end, Kin);
 excerpts(_) ->
 	[].
 
-predicate_from_elem(#xmlel{name = ActionName, attrs = Attribs} = E) ->
+predicate_from_elem(#xmlel{name = ActionName, attrs = Attribs} = E, Author) ->
 	ID = get_attr(<<"id">>, Attribs),
 	Subject = get_attr(<<"subject">>, Attribs),
 	Adjectives = maps:from_list(Attribs),
 	Linguist = get_linguist(),
-	#predicate{id=ID, subject=Subject, action={Linguist:get_sentence_type(ActionName), ActionName}, adjectives=Adjectives, abstract=E};
-predicate_from_elem({xmlcdata, <<"\n">>}) -> undefined;
-predicate_from_elem({xmlcdata, Data}) ->
+	#predicate{id=ID, subject=Subject, action={Linguist:get_sentence_type(ActionName), ActionName}, adjectives=Adjectives, abstract=E, author = Author};
+predicate_from_elem({xmlcdata, <<"\n">>}, _) -> undefined;
+predicate_from_elem({xmlcdata, Data}, _) ->
 	lager:info("Received Data: ~p ~n", [Data]),
 	undefined;
-predicate_from_elem(_) -> undefined.
+predicate_from_elem(_, _) -> undefined.
 
 get_envelop_type(<<"iq">>) ->
 	decree;
