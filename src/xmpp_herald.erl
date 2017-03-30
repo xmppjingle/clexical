@@ -159,7 +159,9 @@ predicate_from_elem(_, _) -> undefined.
 
 validate(#predicate{id = ID, subject = Subject} = P) when ID /= undefined, Subject /= undefined ->
 	P;
-validate(_) -> undefined.
+validate(P) -> 
+	lager:debug("Discarding invalid Predicate: ~p ~n", [P]),
+	undefined.
 
 get_envelop_type(<<"iq">>) ->
 	decree;
