@@ -158,6 +158,7 @@ predicate_from_elem({xmlcdata, Data}, _) ->
 predicate_from_elem(_, _) -> undefined.
 
 validate(#predicate{id = ID, subject = Subject} = P) when ID /= undefined, Subject /= undefined ->
+	lager:debug("Valid Predicate: ~p ~n", [P]),
 	P;
 validate(P) -> 
 	lager:debug("Discarding invalid Predicate: ~p ~n", [P]),
