@@ -34,7 +34,8 @@
 
 -export([
 	letter_from_xmlel/1,
-	get_attr/2
+	get_attr/2,
+	get_attr/3
 	]).
 
 -define(OK, <<"<ok/>">>).
@@ -175,11 +176,14 @@ get_sentence_type(_) ->
     verb.
 
 get_attr(ID, Attribs) ->
+	get_attr(ID, Attribs, undefined).
+
+get_attr(ID, Attribs, Default) ->
 	case fxml:get_attr(ID, Attribs) of
 		{value, Value} -> 
 			Value;
 		_ ->
-			undefined
+			Default
 	end.
 
 process_letter(Letter) ->
