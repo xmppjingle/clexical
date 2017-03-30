@@ -27,12 +27,13 @@
 
 -export([
 	get_envelop_type/1,
-	get_sentence_type/1
+	get_sentence_type/1,
+	predicate_from_elem/2,
+	validate/1
 	]).
 
 -export([
 	letter_from_xmlel/1,
-	predicate_from_elem/2,
 	get_attr/2
 	]).
 
@@ -149,12 +150,16 @@ predicate_from_elem(#xmlel{name = ActionName, attrs = Attribs} = E, Author) ->
 	Subject = get_attr(<<"subject">>, Attribs),
 	Adjectives = maps:from_list(Attribs),
 	Linguist = get_linguist(),
-	#predicate{id=ID, subject=Subject, action={Linguist:get_sentence_type(ActionName), ActionName}, adjectives=Adjectives, abstract=E, author = Author};
+	Linguist:validate(#predicate{id=ID, subject=Subject, action={Linguist:get_sentence_type(ActionName), ActionName}, adjectives=Adjectives, abstract=E, author = Author});
 predicate_from_elem({xmlcdata, <<"\n">>}, _) -> undefined;
 predicate_from_elem({xmlcdata, Data}, _) ->
 	lager:info("Received Data: ~p ~n", [Data]),
 	undefined;
 predicate_from_elem(_, _) -> undefined.
+
+validate(#predicate{id = ID, subject = Subject} = P) when ID /= undefined, Subject /= undefined ->
+	P;
+validate(_) -> undefined.
 
 get_envelop_type(<<"iq">>) ->
 	decree;
