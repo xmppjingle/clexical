@@ -123,7 +123,7 @@ hear(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter, #state
                     ok;
                 PP ->
                     ok
-            end,
+            end
     end,
     lager:info("Recall[~p]: ~p~n", [Key, PP]),
     pronounce(Letter#letter{predicates=Herald:excerpts(PP)}, State#state{last_predicate=P}),
