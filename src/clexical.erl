@@ -113,13 +113,14 @@ pronounce(_, _) ->
 
 -spec hear(#letter{}, #state{}) -> any().
 hear(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter, #state{scribe=Scribe, herald=Herald}=State) ->
-    case Scribe:recall(compose_key(P)) of
+    Key = compose_key(P),
+    case Scribe:recall(Key) of
         #predicate{}=PP ->
             ok;
         _ ->
             PP = Scribe:recall(compose_key(P#predicate{adjectives=[]}))
     end,
-    lager:info("Recall: ~p~n", [PP]),
+    lager:info("Recall[~p]: ~p~n", [Key, PP]),
     pronounce(Letter#letter{predicates=Herald:excerpts(PP)}, State#state{last_predicate=P}),
     hear(Letter#letter{predicates=T}, State);
 hear(#letter{predicates=[#predicate{action={verb,_}}|T]}=Letter, #state{}=State) ->
