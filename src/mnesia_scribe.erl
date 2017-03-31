@@ -27,7 +27,7 @@ curb(_K, _P) ->
 
 -spec recall(binary()) -> #predicate{}|undefined.
 recall(ID) ->
-	lager:debug("Try Recall[~p]... ~p~n", [ID]),
+	lager:debug("Try Recall[~p]... ~n", [ID]),
 	case mnesia:dirty_read(envelope, ID) of
 		[#envelope{predicate=P}|_] ->
 			% mnesia:dirty_delete(envelope, ID),
