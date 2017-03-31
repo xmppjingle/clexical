@@ -16,3 +16,6 @@
 	author :: any(), 
 	type :: decree|bulletin
 	}).
+
+-define(ANY_ID, <<"*ID*">>).
+-define(ANY_SUBJECT, <<"*SUBJECT*">>).
