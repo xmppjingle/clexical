@@ -112,7 +112,7 @@ letter_from_binary(Bin) ->
 -spec letter_from_xmlel(#xmlel{}) -> undefined|#letter{}.
 letter_from_xmlel(#xmlel{name = Type, children = Children, attrs = Attrs}) ->
 	Linguist = get_linguist(),
-	Author = get_attr(<<"from">>, Attrs),
+	Author = get_attr(<<"from">>, Attrs, ?ANY_SUBJECT),
 	P = [Predicate || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author) end, Children), Predicate /= undefined],
 	#letter{type = Linguist:get_envelop_type(Type), predicates=P, author=Author};
 letter_from_xmlel(_R) -> 
