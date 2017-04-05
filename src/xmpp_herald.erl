@@ -119,14 +119,14 @@ letter_from_xmlel(_R) ->
 	lager:info("Invalid Letter Type: ~p ~n", [_R]),
 	undefined.
 
--spec to_binary(#letter{}) -> undefined|binary(). 
-to_binary(#letter{predicates=[], type=Type}) ->
-	BType = erlang:list_to_binary(erlang:atom_to_list(Type)),
+-spec to_binary(#letter{}) -> undefined|binary().
+to_binary(#letter{predicates = [], type = Type}) ->
+	BType = get_envelop(Type),
 	<<"<", BType/binary, "/>">>;
-to_binary(#letter{predicates=PS, type=Type}) ->
+to_binary(#letter{predicates = PS, type = Type, author = Author}) ->
 	PP = to_binary_(PS),
-	BType = erlang:list_to_binary(erlang:atom_to_list(Type)),
-	<<"<", BType/binary, ">", PP/binary, "</", BType/binary, ">">>;
+	BType = get_envelop(Type),
+	<<"<", BType/binary, " to='", Author/binary, "'>", PP/binary, "</", BType/binary, ">">>;
 to_binary(_) ->
 	<<>>.
 
@@ -169,6 +169,11 @@ get_envelop_type(<<"iq">>) ->
 	decree;
 get_envelop_type(<<"presence">>) ->
 	bulletin.
+
+get_envelop(decree) ->
+	<<"iq">>;
+get_envelop(bulletin) ->
+	<<"presence">>.
 
 get_sentence_type(<<"on",_/binary>>) ->
 	preposition;
