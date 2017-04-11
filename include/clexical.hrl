@@ -14,6 +14,7 @@
 -record(letter, {
 	predicates = [] :: [#predicate{}], 
 	author :: any(), 
+	recipient :: any(),
 	type :: decree|bulletin
 	}).
 
