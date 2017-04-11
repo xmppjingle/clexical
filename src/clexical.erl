@@ -115,10 +115,10 @@ pronounce(_, _) ->
 hear(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter, #state{scribe=Scribe, herald=Herald}=State) ->
     Key = compose_key(P),
     case Scribe:recall(Key) of
-        #predicate{} = PP->
+        #predicate{} = PP ->
             ok;
         _ ->
-            case Scribe:recall(compose_key(P#predicate{id = ?ANY_ID, subject = ?ANY_SUBJECT, adjectives=[]})) of
+            case Scribe:recall(compose_key(P#predicate{id = ?ANY_ID, subject = ?ANY_SUBJECT, adjectives = #{}})) of
                 #predicate{} = PP ->
                     ok;
                 PP ->
@@ -183,9 +183,9 @@ fill_id(#predicate{}=P, _) ->
     P.
 
 -spec compose_key(#predicate{}) -> binary().
-compose_key(#predicate{adjectives=#{}=Map}=P) ->
+compose_key(#predicate{adjectives = #{} = Map} = P) when map_size(Map) > 0 ->
     lager:debug("Predicate ~p ~n", [lager:pr(P, ?MODULE)]),
-    BareKey = compose_key(P#predicate{adjectives=[]}),
+    BareKey = compose_key(P#predicate{adjectives=#{}}),
     Suffix = maps:fold(fun(_K, V, A) -> <<A/binary, V/binary>> end, <<>>, Map),
     <<BareKey/binary, Suffix/binary>>;
 compose_key(#predicate{action={_,BName}, subject=Subject, id=ID}) ->
