@@ -184,7 +184,6 @@ fill_id(#predicate{}=P, _) ->
 
 -spec compose_key(#predicate{}) -> binary().
 compose_key(#predicate{adjectives = #{} = Map} = P) when map_size(Map) > 0 ->
-    lager:debug("Predicate ~p ~n", [lager:pr(P, ?MODULE)]),
     BareKey = compose_key(P#predicate{adjectives=#{}}),
     Suffix = maps:fold(fun(_K, V, A) -> <<A/binary, V/binary>> end, <<>>, Map),
     <<BareKey/binary, Suffix/binary>>;

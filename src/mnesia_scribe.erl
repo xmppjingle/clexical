@@ -31,7 +31,7 @@ recall(ID) ->
 	case mnesia:dirty_read(envelope, ID) of
 		[#envelope{predicate=P}|_] ->
 			% mnesia:dirty_delete(envelope, ID),
-			lager:debug("Recall[~p] of ~p~n", [ID, P]),
+			lager:debug("Recalled[~p] of ~p~n", [ID, P]),
 			P;
 		_ ->
 			undefined
