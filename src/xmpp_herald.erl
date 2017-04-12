@@ -148,8 +148,8 @@ excerpts(_) ->
 	[].
 
 predicate_from_elem(#xmlel{name = ActionName, attrs = Attribs} = E, Author) ->
-	ID = get_attr(<<"id">>, Attribs),
-	Subject = get_attr(<<"subject">>, Attribs),
+	ID = get_attr(<<"id">>, Attribs, ?ANY_ID),
+	Subject = get_attr(<<"subject">>, Attribs, ?ANY_SUBJECT),
 	Adjectives = maps:from_list(Attribs),
 	Linguist = get_linguist(),
 	Linguist:validate(#predicate{id=ID, subject=Subject, action={Linguist:get_sentence_type(ActionName), ActionName}, adjectives=Adjectives, abstract=E, author = Author});
