@@ -106,7 +106,7 @@ pronounce(#letter{predicates=[#predicate{action={verb,_}}=P|T]}=Letter, State) -
     ID = PP#predicate.id,
     WID = binary_to_atom(<<"work_", ID/binary>>, utf8),
     {PID, _Ref} = spawn_monitor(?MODULE, say, [Letter#letter{predicates=[PP]}, State]),
-    register(WID, PID),
+    % register(WID, PID),
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(_, _) ->
     ok. % Empty Minded
