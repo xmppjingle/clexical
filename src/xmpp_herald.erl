@@ -133,8 +133,8 @@ to_binary(_) ->
 
 to_binary_([]) ->
 	<<>>;
-to_binary_([#predicate{abstract=Elem}|T])->
-	P = fxml:element_to_binary(Elem),
+to_binary_([#predicate{subject = Subject, abstract = #xmlel{attrs = Attribs} = Elem}|T])->
+	P = fxml:element_to_binary(Elem#xmlel{attrs = [ {<<"subject">>, Subject} | Attribs]}),
 	PP = to_binary_(T),
 	<<P/binary, PP/binary>>.
 
