@@ -99,12 +99,12 @@ proclaim(#letter{}=L) ->
     gen_server:cast(clexical, {proclaim, L}).
 
 -spec pronounce(#letter{}, #state{}) -> any().
-pronounce(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter,  #state{last_predicate=LP}=State) ->
+pronounce(#letter{predicates=[#predicate{action = {preposition,_}} = P|T]} = Letter,  #state{last_predicate = LP} = State) ->
     PP= fill_id(P, LP),
     refrain(Letter#letter{predicates=[PP]}, State),
     pronounce(Letter#letter{predicates=T}, State);
-pronounce(#letter{predicates=[#predicate{action={verb,_}}=P|T]}=Letter, State) ->
-    PP = fill_id(P),
+pronounce(#letter{predicates=[#predicate{action = {verb,_}} = P|T]} = Letter, #state{last_predicate = LP} = State) ->
+    PP = fill_subject(fill_id(P), LP),
     % ID = PP#predicate.id,
     % _WID = binary_to_atom(<<"work_", ID/binary>>, utf8),
     {_PID, _Ref} = spawn_monitor(?MODULE, say, [Letter#letter{predicates=[PP]}, State]),
@@ -168,7 +168,7 @@ proclaim(_, _) ->
 fill_subjects(PS, LP) ->
     lists:map(fun(P) -> fill_subject(P, LP) end, PS).
 
-fill_subject(#predicate{subject = Subject}=P, #predicate{subject = ParentSubject}) when Subject == <<>>; Subject == undefined; Subject == false ->
+fill_subject(#predicate{subject = Subject}=P, #predicate{subject = ParentSubject}) when Subject == ?ANY_SUBJECT; Subject == <<>>; Subject == undefined; Subject == false ->
     P#predicate{subject = ParentSubject};
 fill_subject(#predicate{}=P, _) ->
     P.
