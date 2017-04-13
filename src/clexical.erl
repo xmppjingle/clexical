@@ -33,7 +33,9 @@
     get_adjective/2,
     fill_id/1,
     fill_id/2,
-    fill_ids/2
+    fill_ids/2,
+    fill_subject/2,
+    fill_subjects/2
     ]).
 
 start_link(Herald, Scribe, Vassal) ->
@@ -161,6 +163,15 @@ proclaim(_, _) ->
     ok. % We don't take actions based on what we don't know
 
 % Utils Functions
+
+-spec fill_subjects([#predicate{}], #predicate{}) -> [#predicate{}]|[].
+fill_subjects(PS, LP) ->
+    lists:map(fun(P) -> fill_subject(P, LP) end, PS).
+
+fill_subject(#predicate{subject = Subject}=P, #predicate{subject = ParentSubject}) when Subject == <<>>; Subject == undefined; Subject == false ->
+    P#predicate{subject = ParentSubject};
+fill_subject(#predicate{}=P, _) ->
+    P.
 
 -spec fill_ids([#predicate{}], #predicate{}) -> [#predicate{}]|[].
 fill_ids(PS, LP) ->
