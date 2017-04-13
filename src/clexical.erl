@@ -178,7 +178,7 @@ fill_ids(PS, LP) ->
     lists:map(fun(P) -> fill_id(P, LP) end, PS).
 
 -spec fill_id(#predicate{}) -> #predicate{}.
-fill_id(#predicate{id = ID} = P) when ID == <<>>; ID == undefined; ID == false ->
+fill_id(#predicate{id = ID} = P) when ID == <<>>; ID == ?ANY_ID; ID == undefined; ID == false ->
     P#predicate{id=clexical_id:fresh_id()};
 fill_id(#predicate{}=P) ->
     P.
