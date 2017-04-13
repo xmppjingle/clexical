@@ -103,9 +103,9 @@ pronounce(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter,  
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(#letter{predicates=[#predicate{action={verb,_}}=P|T]}=Letter, State) ->
     PP = fill_id(P),
-    ID = PP#predicate.id,
-    WID = binary_to_atom(<<"work_", ID/binary>>, utf8),
-    {PID, _Ref} = spawn_monitor(?MODULE, say, [Letter#letter{predicates=[PP]}, State]),
+    % ID = PP#predicate.id,
+    % _WID = binary_to_atom(<<"work_", ID/binary>>, utf8),
+    {_PID, _Ref} = spawn_monitor(?MODULE, say, [Letter#letter{predicates=[PP]}, State]),
     % register(WID, PID),
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(_, _) ->
