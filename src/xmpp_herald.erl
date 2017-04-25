@@ -94,9 +94,9 @@ initialize(Opts) ->
 	start_link(Opts).
 
 -spec proclaim(#letter{}) -> ok|error.
-proclaim(#letter{author=Author}=L) -> 
+proclaim(#letter{via = Via}=L) -> 
 	lager:info("Proclamation: ~p -> ~p~n", [L, Author]),
-	case erlang:is_pid(Author) of
+	case erlang:is_pid(Via) of
 		true ->
 			Bin = to_binary(L),
 			Author ! {send, Bin};
@@ -104,6 +104,13 @@ proclaim(#letter{author=Author}=L) ->
 			lager:debug("No Destination: ~p ~n", [L]),
 			ok
 	end.
+
+forward(Listener, Data) when is_pid(Listener) ->
+    lager:debug("Forward: ~p  -> ~p ~n", [Listener, Data]),
+    Listener ! Data;
+forward(Listener, Data) when is_atom(Listener) ->
+    lager:debug("Forward: ~p  -> ~p ~n", [Listener, Data]),
+    gen_server:cast(Listener, Data).
 
 -spec letter_from_binary(Binary :: binary()) -> undefined|#letter{}.
 letter_from_binary(Bin) ->

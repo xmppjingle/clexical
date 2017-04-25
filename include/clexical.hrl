@@ -15,6 +15,7 @@
 	predicates = [] :: [#predicate{}], 
 	author :: any(), 
 	recipient :: any(),
+	via :: any() | undefined,
 	type :: decree|bulletin
 	}).
 
