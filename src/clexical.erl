@@ -120,11 +120,16 @@ hear(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter, #state
         #predicate{} = PP ->
             ok;
         _ ->
-            case Scribe:recall(compose_key(P#predicate{id = ?ANY_ID, subject = ?ANY_SUBJECT, adjectives = #{}})) of
+            case Scribe:recall(compose_key(P#predicate{subject = ?ANY_SUBJECT, adjectives = #{}})) of
                 #predicate{} = PP ->
                     ok;
-                PP ->
-                    ok
+                _ ->
+                    case Scribe:recall(compose_key(P#predicate{id = ?ANY_ID, subject = ?ANY_SUBJECT, adjectives = #{}})) of
+                        #predicate{} = PP ->
+                            ok;
+                        PP ->
+                            ok
+                    end
             end
     end,
     lager:info("Recall[~p]: ~p~n", [Key, PP]),
