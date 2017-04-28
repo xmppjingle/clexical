@@ -188,8 +188,8 @@ fill_id(#predicate{id= ID}=P, undefined) when ID == <<>>; ID == ?ANY_ID; ID == u
     P#predicate{id=clexical_id:fresh_id()};
 fill_id(#predicate{id= <<>>, subject= <<>>}=P, #predicate{id=ID, subject=Subject}) ->
     fill_id(P#predicate{id=ID, subject=Subject});
-fill_id(#predicate{id= <<>>}=P, #predicate{id=ID}) ->
-    fill_id(P#predicate{id=ID});
+fill_id(#predicate{id= ID}=P, #predicate{id=PID}) when ID == <<>>; ID == ?ANY_ID; ID == undefined; ID == false ->
+    fill_id(P#predicate{id=PID});
 fill_id(#predicate{}=P, _) ->
     P.
 
