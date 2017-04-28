@@ -35,7 +35,8 @@
 -export([
 	letter_from_xmlel/1,
 	get_attr/2,
-	get_attr/3
+	get_attr/3,
+	camel/1
 	]).
 
 -define(OK, <<"<ok/>">>).
@@ -181,6 +182,9 @@ get_sentence_type(<<"on",_/binary>>) ->
 	preposition;
 get_sentence_type(_) ->
     verb.
+
+camel(<<>>) -> <<>>;
+camel(<<C:8, Tail/binary>>) -> <<(C-32), Tail/binary>>.
 
 get_attr(ID, Attribs) ->
 	get_attr(ID, Attribs, undefined).
