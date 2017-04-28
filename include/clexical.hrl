@@ -22,3 +22,5 @@
 
 -define(ANY_ID, <<"*ID*">>).
 -define(ANY_SUBJECT, <<"*SUBJECT*">>).
+-define(ANY_RECIPIENT, <<"*RECIPIENT*">>).
+-define(ANY_AUTHOR, <<"*AUTHOR*">>).
