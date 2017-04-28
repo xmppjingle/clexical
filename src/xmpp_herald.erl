@@ -116,20 +116,20 @@ letter_from_xmlel(#xmlel{name = Type, children = Children, attrs = Attrs}) ->
 	Author = get_attr(<<"from">>, Attrs, ?ANY_SUBJECT),
 	Recipient = get_attr(<<"to">>, Attrs, ?ANY_SUBJECT),
 	ID = get_attr(<<"id">>, Attrs, ?ANY_ID),
-	P = [Predicate#predicate{id = ID} || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author) end, Children), Predicate /= undefined],
+	P = [Predicate#predicate{subject = ID} || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author) end, Children), Predicate /= undefined],
 	#letter{type = Linguist:get_envelop_type(Type), predicates=P, author=Author, recipient = Recipient};
 letter_from_xmlel(_R) -> 
 	lager:info("Invalid Letter Type: ~p ~n", [_R]),
 	undefined.
 
 -spec to_binary(#letter{}) -> undefined|binary().
-to_binary(#letter{predicates = [], type = Type, author = Author, recipient = Recipient}) ->
+to_binary(#letter{predicates = [], type = Type, author = Author, recipient = Recipient, subject = ID}) ->
 	BType = get_envelop(Type),
-	<<"<",  BType/binary, " from='", Author/binary, "' to='", Recipient/binary, "'/>">>;
-to_binary(#letter{predicates = PS, type = Type, author = Author, recipient = Recipient}) ->
+	<<"<",  BType/binary, " from='", Author/binary, "' to='", Recipient/binary, "' id='", ID/binary, "'/>">>;
+to_binary(#letter{predicates = PS, type = Type, author = Author, recipient = Recipient, subject = ID}) ->
 	PP = to_binary_(PS),
 	BType = get_envelop(Type),
-	<<"<", BType/binary, " from='", Author/binary, "' to='", Recipient/binary, "'>", PP/binary, "</", BType/binary, ">">>;
+	<<"<", BType/binary, " from='", Author/binary, "' to='", Recipient/binary, "' id='", ID/binary, "'>", PP/binary, "</", BType/binary, ">">>;
 to_binary(_) ->
 	<<>>.
 

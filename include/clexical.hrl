@@ -13,6 +13,7 @@
 
 -record(letter, {
 	predicates = [] :: [#predicate{}], 
+	subject :: any(),
 	author :: any(), 
 	recipient :: any(),
 	via :: any() | undefined,
