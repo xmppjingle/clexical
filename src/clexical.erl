@@ -100,7 +100,7 @@ proclaim(#letter{}=L) ->
 
 -spec pronounce(#letter{}, #state{}) -> any().
 pronounce(#letter{predicates=[#predicate{action = {preposition,_}} = P|T]} = Letter,  #state{last_predicate = LP} = State) ->
-    PP= fill_id(P, LP),
+    PP = fill_id(P, LP),
     refrain(Letter#letter{predicates=[PP]}, State),
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(#letter{predicates=[#predicate{action = {verb,_}} = P|T]} = Letter, #state{last_predicate = LP} = State) ->
@@ -109,7 +109,7 @@ pronounce(#letter{predicates=[#predicate{action = {verb,_}} = P|T]} = Letter, #s
     % _WID = binary_to_atom(<<"work_", ID/binary>>, utf8),
     {_PID, _Ref} = spawn_monitor(?MODULE, say, [Letter#letter{predicates=[PP]}, State]),
     % register(WID, PID),
-    pronounce(Letter#letter{predicates=T}, State);
+    pronounce(Letter#letter{predicates=T}, State#state{last_predicate=PP});
 pronounce(_, _) ->
     ok. % Empty Minded
 
