@@ -120,7 +120,7 @@ hear(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter, #state
         #predicate{} = PP ->
             ok;
         _ ->
-            case Scribe:recall(compose_key(P#predicate{subject = ?ANY_SUBJECT, adjectives = #{}})) of
+            case Scribe:recall(compose_key(P#predicate{adjectives = #{}})) of
                 #predicate{} = PP ->
                     ok;
                 _ ->
