@@ -143,9 +143,9 @@ to_binary_([#predicate{subject = Subject, id = ID, abstract = #xmlel{attrs = Att
 -spec excerpts(#predicate{}) -> []|[#predicate{}].
 excerpts(#predicate{abstract=undefined}) ->
 	[];
-excerpts(#predicate{abstract=#xmlel{children = Kin}, author=Author}) ->
+excerpts(#predicate{abstract=#xmlel{children = Kin}, subject = Subject, author=Author}) ->
 	Linguist = get_linguist(),
-	lists:map(fun(Elem) -> Linguist:predicate_from_elem(Elem, Author) end, Kin);
+	[Predicate#predicate{subject = Subject} || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author) end, Kin), Predicate /= undefined];
 excerpts(_) ->
 	[].
 
@@ -162,7 +162,6 @@ predicate_from_elem({xmlcdata, Data}, _) ->
 predicate_from_elem(_, _) -> undefined.
 
 validate(#predicate{id = ID, subject = Subject} = P) when ID /= undefined, Subject /= undefined ->
-	lager:debug("Valid Predicate: ~p ~n", [P]),
 	P;
 validate(P) -> 
 	lager:debug("Discarding invalid Predicate: ~p ~n", [P]),
