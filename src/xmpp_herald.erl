@@ -96,15 +96,16 @@ initialize(Opts) ->
 
 -spec proclaim(#letter{}) -> ok|error.
 proclaim(#letter{via = Via}=L) -> 
-	lager:info("Proclamation: ~p -> ~p~n", [L, Via]),
-	case erlang:is_pid(Via) of
-		true ->
-			Bin = to_binary(L),
-			Via ! {send, Bin};
-		_ ->
-			lager:debug("No Destination: ~p ~n", [L]),
-			ok
-	end.
+	lager:info("Proclamation: ~p -> ~p~n", [L, Via]).
+	% ,
+	% case erlang:is_pid(Via) of
+	% 	true ->
+	% 		Bin = to_binary(L),
+	% 		Via ! {send, Bin};
+	% 	_ ->
+	% 		lager:debug("No Destination: ~p ~n", [L]),
+	% 		ok
+	% end.
 
 -spec letter_from_binary(Binary :: binary()) -> undefined|#letter{}.
 letter_from_binary(Bin) ->
