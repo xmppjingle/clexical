@@ -3,7 +3,8 @@
 -include_lib("xmpp.hrl").
 
 -export([
-    remove_whitespaces_deeply/1
+    remove_whitespaces_deeply/1,
+    is_whitespace/1
     ]).
 
 is_whitespace({xmlcdata, CData}) ->
