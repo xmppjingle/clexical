@@ -109,7 +109,7 @@ proclaim(#letter{via = Via}=L) ->
 
 -spec letter_from_binary(Binary :: binary()) -> undefined|#letter{}.
 letter_from_binary(Bin) ->
-	letter_from_xmlel( fxml_stream:parse_element(Bin) ).
+	letter_from_xmlel( clexical_utils:remove_whitespaces_deeply(fxml_stream:parse_element(Bin)) ).
 
 -spec letter_from_xmlel(#xmlel{}) -> undefined|#letter{}.
 letter_from_xmlel(#xmlel{name = Type, children = Children, attrs = Attrs}) ->
