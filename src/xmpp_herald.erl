@@ -112,13 +112,13 @@ letter_from_binary(Bin) ->
 	letter_from_xmlel( clexical_utils:remove_whitespaces_deeply(fxml_stream:parse_element(Bin)) ).
 
 -spec letter_from_xmlel(#xmlel{}) -> undefined|#letter{}.
-letter_from_xmlel(#xmlel{name = Type, children = Children, attrs = Attrs}) ->
+letter_from_xmlel(#xmlel{children = Children, attrs = Attrs} = XML) ->
 	Linguist = get_linguist(),
 	Author = get_attr(<<"from">>, Attrs, ?ANY_AUTHOR),
 	Recipient = get_attr(<<"to">>, Attrs, ?ANY_RECIPIENT),
 	Subject = get_attr(<<"id">>, Attrs, ?ANY_SUBJECT),
 	P = [Predicate#predicate{subject = Subject} || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author) end, Children), Predicate /= undefined],
-	#letter{type = Linguist:get_envelop_type(Type), predicates=P, author=Author, recipient = Recipient, subject = Subject};
+	#letter{type = Linguist:get_envelop_type(XML), predicates=P, author=Author, recipient = Recipient, subject = Subject};
 letter_from_xmlel(_R) -> 
 	lager:info("Invalid Letter Type: ~p ~n", [_R]),
 	undefined.
@@ -168,9 +168,11 @@ validate(P) ->
 	lager:debug("Discarding invalid Predicate: ~p ~n", [P]),
 	undefined.
 
-get_envelop_type(<<"iq">>) ->
+get_envelop_type(#xmlel{name = <<"iq">>}) ->
 	decree;
-get_envelop_type(<<"presence">>) ->
+get_envelop_type(#xmlel{name = <<"presence">>}) ->
+	bulletin;
+get_envelop_type(_) ->
 	bulletin.
 
 get_envelop(decree) ->
