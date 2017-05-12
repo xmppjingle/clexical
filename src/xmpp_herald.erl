@@ -28,6 +28,7 @@
 -export([
 	get_envelop_type/1,
 	get_sentence_type/1,
+	get_envelop/1,
 	predicate_from_elem/2,
 	validate/1
 	]).
@@ -96,7 +97,7 @@ initialize(Opts) ->
 
 -spec proclaim(#letter{}) -> ok|error.
 proclaim(#letter{via = Via}=L) -> 
-	lager:info("Proclamation: ~p -> ~p~n", [L, Via]).
+	lager:info("No Proclamation: ~p -> ~p~n", [L, Via]).
 	% ,
 	% case erlang:is_pid(Via) of
 	% 	true ->
@@ -117,19 +118,20 @@ letter_from_xmlel(#xmlel{children = Children, attrs = Attrs} = XML) ->
 	Author = get_attr(<<"from">>, Attrs, ?ANY_AUTHOR),
 	Recipient = get_attr(<<"to">>, Attrs, ?ANY_RECIPIENT),
 	Subject = get_attr(<<"id">>, Attrs, ?ANY_SUBJECT),
+	Envelop = XML#xmlel{children = []},
 	P = [Predicate#predicate{subject = Subject} || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author) end, Children), Predicate /= undefined],
-	#letter{type = Linguist:get_envelop_type(XML), predicates=P, author=Author, recipient = Recipient, subject = Subject};
+	#letter{type = Linguist:get_envelop_type(XML), predicates=P, author=Author, recipient = Recipient, subject = Subject, envelop = Envelop};
 letter_from_xmlel(_R) -> 
 	lager:info("Invalid Letter Type: ~p ~n", [_R]),
 	undefined.
 
 -spec to_binary(#letter{}) -> undefined|binary().
-to_binary(#letter{predicates = [], type = Type, author = Author, recipient = Recipient, subject = ID}) ->
-	BType = get_envelop(Type),
+to_binary(#letter{predicates = [], author = Author, recipient = Recipient, subject = ID} = L) ->
+	BType = get_envelop(L),
 	<<"<",  BType/binary, " from='", Author/binary, "' to='", Recipient/binary, "' id='", ID/binary, "'/>">>;
-to_binary(#letter{predicates = PS, type = Type, author = Author, recipient = Recipient, subject = ID}) ->
+to_binary(#letter{predicates = PS, author = Author, recipient = Recipient, subject = ID} = L) ->
 	PP = to_binary_(PS),
-	BType = get_envelop(Type),
+	BType = get_envelop(L),
 	<<"<", BType/binary, " from='", Author/binary, "' to='", Recipient/binary, "' id='", ID/binary, "'>", PP/binary, "</", BType/binary, ">">>;
 to_binary(_) ->
 	<<>>.
@@ -175,9 +177,9 @@ get_envelop_type(#xmlel{name = <<"presence">>}) ->
 get_envelop_type(_) ->
 	bulletin.
 
-get_envelop(decree) ->
+get_envelop(#letter{type = decree}) ->
 	<<"iq">>;
-get_envelop(bulletin) ->
+get_envelop(#letter{type = bulletin}) ->
 	<<"presence">>.
 
 get_sentence_type(<<"on",_/binary>>) ->

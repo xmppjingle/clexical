@@ -110,6 +110,8 @@ pronounce(#letter{predicates=[#predicate{action = {verb,_}} = P|T]} = Letter, #s
     {_PID, _Ref} = spawn_monitor(?MODULE, say, [Letter#letter{predicates=[PP]}, State]),
     % register(WID, PID),
     pronounce(Letter#letter{predicates=T}, State#state{last_predicate=PP});
+pronounce(#letter{predicates=[]} = Letter, #state{last_predicate = _LP} = State) ->
+    {_PID, _Ref} = spawn_monitor(?MODULE, say, [Letter, State]);
 pronounce(_, _) ->
     ok. % Empty Minded
 
@@ -147,6 +149,11 @@ say(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{herald=Herald, vassal=
     lager:info("Say: ~p~n", [Letter]),
     pronounce(Letter#letter{predicates=Herald:excerpts(P)}, State#state{last_predicate=P}),
     Reply = Vassal:work(Letter#letter{predicates=[P]}, LP),
+    hear(Reply, State),
+    proclaim(Reply, State);
+say(#letter{predicates=[]}=Letter, #state{herald=_Herald, vassal=Vassal, last_predicate=LP}=State) ->
+    lager:info("Say: ~p~n", [Letter]),
+    Reply = Vassal:work(Letter, LP),
     hear(Reply, State),
     proclaim(Reply, State);
 say(_,_) ->
