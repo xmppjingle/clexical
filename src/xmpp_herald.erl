@@ -28,7 +28,6 @@
 -export([
 	get_envelop_type/1,
 	get_sentence_type/1,
-	get_envelop/1,
 	predicate_from_elem/2,
 	validate/1
 	]).
@@ -126,13 +125,23 @@ letter_from_xmlel(_R) ->
 	undefined.
 
 -spec to_binary(#letter{}) -> undefined|binary().
-to_binary(#letter{predicates = [], author = Author, recipient = Recipient, subject = ID} = L) ->
-	BType = get_envelop(L),
-	<<"<",  BType/binary, " from='", Author/binary, "' to='", Recipient/binary, "' id='", ID/binary, "'/>">>;
-to_binary(#letter{predicates = PS, author = Author, recipient = Recipient, subject = ID} = L) ->
+to_binary(#letter{predicates = [], type = decree, author = Author, recipient = Recipient, subject = ID}) ->
+	<<"<iq from='", Author/binary, "' to='", Recipient/binary, "' id='", ID/binary, "' type='result'/>">>;
+to_binary(#letter{predicates = PS, type = decree, author = Author, recipient = Recipient, subject = ID}) ->
 	PP = to_binary_(PS),
-	BType = get_envelop(L),
-	<<"<", BType/binary, " from='", Author/binary, "' to='", Recipient/binary, "' id='", ID/binary, "'>", PP/binary, "</", BType/binary, ">">>;
+	<<"<iq from='", Author/binary, "' to='", Recipient/binary, "' id='", ID/binary, "' type='set'>", PP/binary, "</iq>">>;
+
+to_binary(#letter{predicates = [], type = bulletin, author = Author, recipient = Recipient, subject = ID, envelop = #xmlel{name = <<"iq">>}}) ->
+	<<"<iq from='", Author/binary, "' to='", Recipient/binary, "' id='", ID/binary, "'/>">>;
+to_binary(#letter{predicates = PS, type = bulletin, author = Author, recipient = Recipient, subject = ID, envelop = #xmlel{name = <<"iq">>}}) ->
+	PP = to_binary_(PS),
+	<<"<iq from='", Author/binary, "' to='", Recipient/binary, "' id='", ID/binary, "' type='result'>", PP/binary, "</iq>">>;
+
+to_binary(#letter{predicates = [], type = bulletin, author = Author, recipient = Recipient, subject = ID}) ->
+	<<"<presence from='", Author/binary, "' to='", Recipient/binary, "' id='", ID/binary, "'/>">>;
+to_binary(#letter{predicates = PS, type = bulletin, author = Author, recipient = Recipient, subject = ID}) ->
+	PP = to_binary_(PS),
+	<<"<presence from='", Author/binary, "' to='", Recipient/binary, "' id='", ID/binary, "'>", PP/binary, "</presence>">>;
 to_binary(_) ->
 	<<>>.
 
@@ -176,11 +185,6 @@ get_envelop_type(#xmlel{name = <<"presence">>}) ->
 	bulletin;
 get_envelop_type(_) ->
 	bulletin.
-
-get_envelop(#letter{type = decree}) ->
-	<<"iq">>;
-get_envelop(#letter{type = bulletin}) ->
-	<<"presence">>.
 
 get_sentence_type(<<"on",_/binary>>) ->
 	preposition;
