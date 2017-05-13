@@ -134,7 +134,7 @@ hear(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter, #state
                     end
             end
     end,
-    lager:info("Recall[~p]: ~p~n", [Key, PP]),
+    lager:debug("Recall[~p]: ~p~n", [Key, PP]),
     pronounce(Letter#letter{predicates=Herald:excerpts(PP)}, State#state{last_predicate=P}),
     hear(Letter#letter{predicates=T}, State);
 hear(#letter{predicates=[#predicate{action={verb,_}}|T]}=Letter, #state{}=State) ->
@@ -146,13 +146,13 @@ hear(_, _) ->
 
 -spec say(#letter{}, #state{}) -> any().
 say(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{herald=Herald, vassal=Vassal, last_predicate=LP}=State) ->
-    lager:info("Say: ~p~n", [Letter]),
+    lager:debug("Say: ~p~n", [Letter]),
     pronounce(Letter#letter{predicates=Herald:excerpts(P)}, State#state{last_predicate=P}),
     Reply = Vassal:work(Letter#letter{predicates=[P]}, LP),
     hear(Reply, State),
     proclaim(Reply, State);
 say(#letter{predicates=[]}=Letter, #state{herald=_Herald, vassal=Vassal, last_predicate=LP}=State) ->
-    lager:info("Say: ~p~n", [Letter]),
+    lager:debug("Say: ~p~n", [Letter]),
     Reply = Vassal:work(Letter, LP),
     hear(Reply, State),
     proclaim(Reply, State);
@@ -162,14 +162,14 @@ say(_,_) ->
 -spec refrain(#letter{}, #state{}) -> any().
 refrain(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{herald=Herald, scribe=Scribe}=_State) ->
     Key = compose_key(P),
-    lager:info("Refrain[~p]: ~p ~n", [Key, Herald:to_binary(Letter)]),
+    lager:debug("Refrain[~p]: ~p ~n", [Key, Herald:to_binary(Letter)]),
     Scribe:curb(Key, P);
 refrain(_,_) ->
     ok.
 
 -spec proclaim(#letter{}, #state{}) -> any().
 proclaim(#letter{predicates=[#predicate{}|_]}=Letter, #state{herald=Herald}) ->
-    lager:info("Proclaim: ~p ~n", [Herald:to_binary(Letter)]),
+    lager:debug("Proclaim: ~p ~n", [Herald:to_binary(Letter)]),
     Herald:proclaim(Letter);
 proclaim(_, _) ->
     ok. % We don't take actions based on what we don't know

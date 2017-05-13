@@ -172,7 +172,7 @@ predicate_from_elem(#xmlel{name = ActionName, attrs = Attribs} = E, Author) ->
 	Linguist:validate(#predicate{id=ID, subject=Subject, action={Linguist:get_sentence_type(ActionName), ActionName}, adjectives=Adjectives, abstract=E, author = Author});
 predicate_from_elem({xmlcdata, <<"\n">>}, _) -> undefined;
 predicate_from_elem({xmlcdata, Data}, _) ->
-	lager:info("Received Data: ~p ~n", [Data]),
+	lager:debug("Received Data: ~p ~n", [Data]),
 	undefined;
 predicate_from_elem(_, _) -> undefined.
 
