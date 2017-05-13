@@ -18,6 +18,7 @@
 	recipient :: any() | <<>>,
 	via :: any() | undefined,
 	envelop :: any() | <<>>,
+	original :: any() | <<>>,
 	type :: decree|bulletin
 	}).
 

@@ -109,7 +109,10 @@ proclaim(#letter{via = Via}=L) ->
 
 -spec letter_from_binary(Binary :: binary()) -> undefined|#letter{}.
 letter_from_binary(Bin) ->
-	letter_from_xmlel( clexical_utils:remove_whitespaces_deeply(fxml_stream:parse_element(Bin)) ).
+	case letter_from_xmlel( clexical_utils:remove_whitespaces_deeply(fxml_stream:parse_element(Bin)) ) of
+		#letter{} = L -> L#letter{original = Bin};
+		_ -> undefined
+	end.
 
 -spec letter_from_xmlel(#xmlel{}) -> undefined|#letter{}.
 letter_from_xmlel(#xmlel{children = Children, attrs = Attrs} = XML) ->
