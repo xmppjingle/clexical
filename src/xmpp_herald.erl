@@ -96,7 +96,7 @@ initialize(Opts) ->
 
 -spec proclaim(#letter{}) -> ok|error.
 proclaim(#letter{via = Via}=L) -> 
-	lager:info("No Proclamation: ~p -> ~p~n", [L, Via]).
+	lager:debug("No Proclamation: ~p -> ~p~n", [L, Via]).
 	% ,
 	% case erlang:is_pid(Via) of
 	% 	true ->
