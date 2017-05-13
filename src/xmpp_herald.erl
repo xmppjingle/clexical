@@ -122,7 +122,7 @@ letter_from_xmlel(#xmlel{children = Children, attrs = Attrs} = XML) ->
 	Subject = get_attr(<<"id">>, Attrs, ?ANY_SUBJECT),
 	Envelop = XML#xmlel{children = []},
 	P = [Predicate#predicate{subject = Subject} || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author) end, Children), Predicate /= undefined],
-	#letter{type = Linguist:get_envelop_type(XML), predicates=P, author=Author, recipient = Recipient, subject = Subject, envelop = Envelop};
+	#letter{type = Linguist:get_envelop_type(XML), predicates=P, author=Author, recipient = Recipient, subject = Subject, envelop = Envelop, original = XML};
 letter_from_xmlel(_R) -> 
 	lager:info("Invalid Letter Type: ~p ~n", [_R]),
 	undefined.
