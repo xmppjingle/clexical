@@ -28,7 +28,7 @@
 -export([
 	get_envelop_type/1,
 	get_sentence_type/1,
-	predicate_from_elem/2,
+	predicate_from_elem/3,
 	validate/1
 	]).
 
@@ -121,7 +121,7 @@ letter_from_xmlel(#xmlel{children = Children, attrs = Attrs} = XML) ->
 	Recipient = get_attr(<<"to">>, Attrs, ?ANY_RECIPIENT),
 	Subject = get_attr(<<"id">>, Attrs, ?ANY_SUBJECT),
 	Envelop = XML#xmlel{children = []},
-	P = [Predicate#predicate{subject = Subject} || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author) end, Children), Predicate /= undefined],
+	P = [Predicate#predicate{subject = Subject} || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author, Envelop) end, Children), Predicate /= undefined],
 	#letter{type = Linguist:get_envelop_type(XML), predicates=P, author=Author, recipient = Recipient, subject = Subject, envelop = Envelop, original = XML};
 letter_from_xmlel(_R) -> 
 	lager:info("Invalid Letter Type: ~p ~n", [_R]),
@@ -158,23 +158,24 @@ to_binary_([#predicate{subject = Subject, id = ID, abstract = #xmlel{attrs = Att
 -spec excerpts(#predicate{}) -> []|[#predicate{}].
 excerpts(#predicate{abstract=undefined}) ->
 	[];
-excerpts(#predicate{abstract=#xmlel{children = Kin}, subject = Subject, author=Author}) ->
+excerpts(#predicate{abstract=#xmlel{children = Kin} = XML, subject = Subject, author=Author}) ->
 	Linguist = get_linguist(),
-	[Predicate#predicate{subject = Subject} || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author) end, Kin), Predicate /= undefined];
+	Envelop = XML#xmlel{children = []},
+	[Predicate#predicate{subject = Subject} || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author, Envelop) end, Kin), Predicate /= undefined];
 excerpts(_) ->
 	[].
 
-predicate_from_elem(#xmlel{name = ActionName, attrs = Attribs} = E, Author) ->
+predicate_from_elem(#xmlel{name = ActionName, attrs = Attribs} = E, Author, _Envelop) ->
 	ID = get_attr(<<"id">>, Attribs, ?ANY_ID),
 	Subject = get_attr(<<"subject">>, Attribs, ?ANY_SUBJECT),
 	Adjectives = maps:from_list(Attribs),
 	Linguist = get_linguist(),
 	Linguist:validate(#predicate{id=ID, subject=Subject, action={Linguist:get_sentence_type(ActionName), ActionName}, adjectives=Adjectives, abstract=E, author = Author});
-predicate_from_elem({xmlcdata, <<"\n">>}, _) -> undefined;
-predicate_from_elem({xmlcdata, Data}, _) ->
+predicate_from_elem({xmlcdata, <<"\n">>}, _, _) -> undefined;
+predicate_from_elem({xmlcdata, Data}, _, _) ->
 	lager:debug("Received Data: ~p ~n", [Data]),
 	undefined;
-predicate_from_elem(_, _) -> undefined.
+predicate_from_elem(_, _, _) -> undefined.
 
 validate(#predicate{id = ID, subject = Subject} = P) when ID /= undefined, Subject /= undefined ->
 	P;

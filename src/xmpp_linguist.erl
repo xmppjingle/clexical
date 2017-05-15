@@ -6,6 +6,6 @@
 
 -callback get_sentence_type(Sentence::binary()) -> preposition|verb|undefined.
 
--callback predicate_from_elem(Elem::#xmlel{}, Author::binary()) -> #predicate{}|undefined.
+-callback predicate_from_elem(Elem::#xmlel{}, Author::binary(), Envelop::#xmlel{}|undefined) -> #predicate{}|undefined.
 
 -callback validate(#predicate{}) -> #predicate{}|undefined.
