@@ -4,18 +4,18 @@
 
 -record(predicate, {
 	id = <<>> :: binary(),
-	subject = <<>> :: binary(), 
+	subject = <<>> :: binary(),
+	author = undefined :: any(),
 	action :: {kind(), binary()}, 
 	adjectives = undefined :: map()|undefined, 
-	abstract = undefined :: any(), 
-	author = undefined :: any()
+	abstract = undefined :: any()
 	}).
 
 -record(letter, {
-	predicates = [] :: [#predicate{}], 
 	subject :: any() | <<>>,
 	author :: any() | <<>>, 
 	recipient :: any() | <<>>,
+	predicates = [] :: [#predicate{}], 
 	via :: any() | undefined,
 	envelop :: any() | <<>>,
 	original :: any() | <<>>,
