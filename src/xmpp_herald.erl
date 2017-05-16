@@ -165,8 +165,8 @@ excerpts(#predicate{abstract=#xmlel{children = Kin} = XML, subject = Subject, au
 excerpts(_) ->
 	[].
 
-predicate_from_elem(#xmlel{name = ActionName, attrs = Attribs} = E, Author, _Envelop) ->
-	ID = get_attr(<<"id">>, Attribs, ?ANY_ID),
+predicate_from_elem(#xmlel{name = ActionName, attrs = Attribs} = E, Author, Envelop) ->
+	ID = get_attr(<<"id">>, Attribs, get_attr(<<"id">>, Envelop, ?ANY_ID)),
 	Subject = get_attr(<<"subject">>, Attribs, ?ANY_SUBJECT),
 	Adjectives = maps:from_list(Attribs),
 	Linguist = get_linguist(),
@@ -201,13 +201,22 @@ camel(<<C:8, Tail/binary>>) -> <<(C-32), Tail/binary>>.
 get_attr(ID, Attribs) ->
 	get_attr(ID, Attribs, undefined).
 
-get_attr(ID, Attribs, Default) ->
+get_attr(ID, #xmlel{attrs = Attribs}, Default) ->
 	case fxml:get_attr(ID, Attribs) of
 		{value, Value} -> 
 			Value;
 		_ ->
 			Default
-	end.
+	end;
+get_attr(ID, Attribs, Default) when is_list(Attribs) ->
+	case fxml:get_attr(ID, Attribs) of
+		{value, Value} -> 
+			Value;
+		_ ->
+			Default
+	end;
+get_attr(_ID, _, Default) ->
+	Default.
 
 process_letter(Letter) ->
 	case Letter of
