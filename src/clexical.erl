@@ -180,7 +180,9 @@ proclaim(_, _) ->
 fill_subjects(PS, LP) ->
     lists:map(fun(P) -> fill_subject(P, LP) end, PS).
 
-fill_subject(#predicate{subject = Subject}=P, #predicate{subject = ParentSubject}) when Subject == ?ANY_SUBJECT; Subject == <<>>; Subject == undefined; Subject == false ->
+fill_subject(#predicate{}=P, #predicate{subject = ParentSubject}) ->
+    fill_subject(P, ParentSubject);
+fill_subject(#predicate{subject = Subject}=P, ParentSubject) when Subject == ?ANY_SUBJECT; Subject == <<>>; Subject == undefined; Subject == false ->
     P#predicate{subject = ParentSubject};
 fill_subject(#predicate{}=P, _) ->
     P.

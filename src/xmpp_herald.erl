@@ -121,7 +121,7 @@ letter_from_xmlel(#xmlel{children = Children, attrs = Attrs} = XML) ->
 	Recipient = get_attr(<<"to">>, Attrs, ?ANY_RECIPIENT),
 	Subject = get_attr(<<"id">>, Attrs, ?ANY_SUBJECT),
 	Envelop = XML#xmlel{children = []},
-	P = [Predicate#predicate{subject = Subject} || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author, Envelop) end, Children), Predicate /= undefined],
+	P = [clexical:fill_subject(Predicate, Subject) || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author, Envelop) end, Children), Predicate /= undefined],
 	#letter{type = Linguist:get_envelop_type(XML), predicates=P, author=Author, recipient = Recipient, subject = Subject, envelop = Envelop, original = XML};
 letter_from_xmlel(_R) -> 
 	lager:info("Invalid Letter Type: ~p ~n", [_R]),
@@ -158,10 +158,10 @@ to_binary_([#predicate{subject = Subject, id = ID, abstract = #xmlel{attrs = Att
 -spec excerpts(#predicate{}) -> []|[#predicate{}].
 excerpts(#predicate{abstract=undefined}) ->
 	[];
-excerpts(#predicate{abstract=#xmlel{children = Kin} = XML, author=Author} = PP) ->
+excerpts(#predicate{abstract=#xmlel{children = Kin} = XML, author=Author, subject = Subject}) ->
 	Linguist = get_linguist(),
 	Envelop = XML#xmlel{children = []},
-	[ clexical:fill_subject(Predicate, PP) || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author, Envelop) end, Kin), Predicate /= undefined];
+	[ clexical:fill_subject(Predicate, Subject) || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author, Envelop) end, Kin), Predicate /= undefined];
 excerpts(_) ->
 	[].
 
