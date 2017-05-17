@@ -211,7 +211,7 @@ compose_key(#predicate{adjectives = #{} = Map} = P) when map_size(Map) > 0 ->
     Suffix = maps:fold(fun(_K, V, A) -> <<A/binary, V/binary>> end, <<>>, Map),
     <<BareKey/binary, Suffix/binary>>;
 compose_key(#predicate{action={_,BName}, subject=Subject, id=ID}) ->
-    <<Subject/binary, ID/binary, BName/binary>>;
+    <<Subject/binary, "@", ID/binary, BName/binary>>;
 compose_key(_) ->
     <<>>.
 

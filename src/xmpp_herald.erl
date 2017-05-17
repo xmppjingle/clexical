@@ -158,10 +158,10 @@ to_binary_([#predicate{subject = Subject, id = ID, abstract = #xmlel{attrs = Att
 -spec excerpts(#predicate{}) -> []|[#predicate{}].
 excerpts(#predicate{abstract=undefined}) ->
 	[];
-excerpts(#predicate{abstract=#xmlel{children = Kin} = XML, subject = Subject, author=Author}) ->
+excerpts(#predicate{abstract=#xmlel{children = Kin} = XML, author=Author} = PP) ->
 	Linguist = get_linguist(),
 	Envelop = XML#xmlel{children = []},
-	[Predicate#predicate{subject = Subject} || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author, Envelop) end, Kin), Predicate /= undefined];
+	[ clexical:fill_subject(Predicate, PP) || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author, Envelop) end, Kin), Predicate /= undefined];
 excerpts(_) ->
 	[].
 
