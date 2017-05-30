@@ -15,7 +15,8 @@
 -spec initialize(Opts :: any()) -> ok|error.
 initialize(_Opts) ->
 	mnesia:start(),
-	mnesia:create_table(envelope,  [{attributes, record_info(fields, envelope)}]).
+	mnesia:create_table(envelope,  [{attributes, record_info(fields, envelope)}]),
+	lager:info("MNesia Scribe Started with: ~p~n", [_Opts]).
 
 -spec curb(Seal :: binary(), #predicate{}) -> any().
 curb(Seal, #predicate{}=Predicate) when is_binary(Seal) -> 
