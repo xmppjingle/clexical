@@ -210,7 +210,7 @@ fill_id(#predicate{}=P, _) ->
 -spec compose_key(#predicate{}) -> binary().
 compose_key(#predicate{adjectives = #{} = Map} = P) when map_size(Map) > 0 ->
     BareKey = compose_key(P#predicate{adjectives=#{}}),
-    Suffix = maps:fold(fun(_K, V, A) -> <<A/binary, V/binary>> end, <<>>, Map),
+    Suffix = maps:fold(fun(_K, V, A) -> <<A/binary, V/binary>> end, <<>>, maps:filter(fun(K, _) -> case K of <<"id">> -> false; <<"subject">> -> false; _ -> true end end, Map)),
     <<BareKey/binary, Suffix/binary>>;
 compose_key(#predicate{action={_,BName}, subject=Subject, id=ID}) ->
     <<Subject/binary, "@", ID/binary, BName/binary>>;
