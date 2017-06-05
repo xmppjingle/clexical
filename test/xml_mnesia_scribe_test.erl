@@ -5,8 +5,10 @@
 -include("../include/clexical_test.hrl").
 
 setup_test_() ->
-    mnesia_scribe:init([]),
+    clexical_id:start_link([]),
+    clexical:start_link({xmpp_herald, []}, {mnesia_scribe, []}, {?MODULE, []}),
     ?start_lager(),
+    ?start_apps(),
     {setup,
         spawn,
         fun init_per_suite/0,
@@ -15,15 +17,31 @@ setup_test_() ->
         ]
     }.
 
+initialize(_) ->
+    ok.
+
 init_per_suite() ->
     ok.
 
 end_per_suite(_Config) ->
+    clexical:terminate(ok, ok),
     ok.
 
 basic_bear_in_mind_test() ->
-	P = ?PRED("1","set",{verb, <<"offer">>},[?PRED("1","set",{preposition, <<"purchased">>},[?PRED("1","set",{verb, celleb},[])])]),
+	#letter{predicates = [P|_]} = xmpp_herald:letter_from_binary(<<"<iq id='", ?ANY_SUBJECT/binary, "'><onOffer id='", ?ANY_ID/binary, "'><test1/><test2/></onOffer></iq>">>),
+    lager:debug("P: ~p ~n", [P]),
 	K = clexical:compose_key(P),
 	mnesia_scribe:curb(K, P),
 	PP = mnesia_scribe:recall(K),
     ?assertEqual(P, PP).
+
+process_test() ->
+    xmpp_herald:process_letter(xmpp_herald:letter_from_binary(<<"<iq id='", ?ANY_SUBJECT/binary, "'><onOffer id='", ?ANY_ID/binary, "'><test1/><test2/></onOffer></iq>">>)),
+    timer:sleep(200),
+    xmpp_herald:process_letter(xmpp_herald:letter_from_binary(<<"<presence id='", ?ANY_SUBJECT/binary, "'><onOffer id='", ?ANY_ID/binary, "'/></presence>">>)),
+    
+    ?assertEqual(1, 1).
+
+work(_L, _LP) ->
+    lager:debug("Test Work: ~p on: ~p ~n", [_L, _LP]),
+    ok.

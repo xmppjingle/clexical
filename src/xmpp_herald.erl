@@ -85,7 +85,7 @@ get_linguist() ->
 		_ ->
 			?MODULE
 		after
-			1000 ->
+			500 ->
 				lager:error("Failed to retrieve Linguist on: ~p  ~n", [?MODULE]),
 				?MODULE
 	end.

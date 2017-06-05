@@ -11,7 +11,7 @@
     work/2,
     letter_from_binary/1,
     to_binary/1,
-    init/1
+    initialize/1
     ]).
 
 -include("../include/clexical_test.hrl").
@@ -32,7 +32,7 @@ setup_test_() ->
     Herald = proplists:get_value(herald, ClexiCfg),
     Scribe = proplists:get_value(scribe, ClexiCfg),
     Vassal = proplists:get_value(vassal, ClexiCfg),
-    {ok, _} = clexical:start_link(Herald, Scribe, Vassal),
+    % {ok, _} = clexical:start_link({clexical_test, Herald}, {clexical_test, Scribe}, {clexical_test, Vassal}),
 
     {setup,
         spawn,
@@ -42,20 +42,14 @@ setup_test_() ->
     }.
 
 init_per_suite() ->
-    random:seed(erlang:now()),
     ok.
 
 end_per_suite(_Config) ->
     meck:unload(),
+    clexical:terminate(ok, ok),
     ok.
 
 single_execution() ->
-    News = #letter{predicates=[?PRED("1","set",{preposition, <<"purchased">>},[])]},
-    lager:debug("News: ~p~n", [News]),
-    Letter= #letter{predicates=[?PRED("1","set",{verb, <<"offer">>},[?PRED("1","set",{preposition, <<"purchased">>},[?PRED("1","set",{verb, <<"celleb">>},[])])])]},
-	gen_server:call(clexical, {recite, Letter}),
-    timer:sleep(500),
-    gen_server:call(clexical, {attend, News}),
 	?_assert(true).
 
 proclaim(L) ->
@@ -67,7 +61,7 @@ curb(K, V) ->
     ok.
 
 recall(K) ->
-    V=?PRED("1","set",{preposition, purchased},[?PRED("1","set",{verb, <<"celleb">>},[])]),
+    V = <<>>,
     lager:debug("Test Recall: ~p -> ~p~n", [K, V]),
     V.
 
@@ -85,5 +79,5 @@ letter_from_binary(_) ->
 to_binary(_) ->
     undefined.
 
-init(_Opts) ->
+initialize(_Opts) ->
     ok.

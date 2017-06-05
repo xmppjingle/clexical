@@ -2,8 +2,6 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("confetti/include/confetti.hrl").
 
--define(PRED(ID,SUB,ACT,ABS), #predicate{id= <<ID>>, subject= <<SUB>>, action=ACT, abstract=ABS}).
-
 -define(start_lager(), begin
     case lists:keyfind(lager, 1, application:loaded_applications()) of
         false ->
@@ -14,34 +12,27 @@
     end    
 end).
 
--define(start_exmpp(), begin
-    case lists:keyfind(redo, 1, application:loaded_applications()) of
+-define(start_apps(), begin
+    case lists:keyfind(fast_xml, 1, application:loaded_applications()) of
         false ->
-            redo:start_link();
+            application:start(fast_xml);
         _ ->
             ok
-    end    
-end).
-
--define(start_ranch(), begin
-    case lists:keyfind(ranch, 1, application:loaded_applications()) of
+    end,
+    case lists:keyfind(mnesia, 1, application:loaded_applications()) of
         false ->
-            case whereis(ranch) of
-                undefined ->
-                    application:start(ranch);
-                _ ->
-                    ok
-            end;
+            application:start(mnesia);
         _ ->
             ok
-    end    
+    end   
 end).
 
 -define(meck_confetti(Config), begin
     case whereis(confetti) of
         undefined ->
             meck:new(confetti),
-            meck:expect(confetti, fetch, 1, Config);
+            meck:expect(confetti, fetch, 1, Config),
+            meck:expect(confetti, terminate, 2, ok);
         _ ->
             ok
     end
