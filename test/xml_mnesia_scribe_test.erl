@@ -38,9 +38,14 @@ basic_bear_in_mind_test() ->
 process_test() ->
     xmpp_herald:process_letter(xmpp_herald:letter_from_binary(<<"<iq id='", ?ANY_SUBJECT/binary, "'><onOffer id='", ?ANY_ID/binary, "'><test1/><test2/></onOffer></iq>">>)),
     timer:sleep(200),
-    xmpp_herald:process_letter(xmpp_herald:letter_from_binary(<<"<presence id='", ?ANY_SUBJECT/binary, "'><onOffer id='", ?ANY_ID/binary, "'/></presence>">>)),
-    
+    xmpp_herald:process_letter(xmpp_herald:letter_from_binary(<<"<presence id='", ?ANY_SUBJECT/binary, "'><onOffer id='", ?ANY_ID/binary, "'/></presence>">>)),   
     ?assertEqual(1, 1).
+
+merge_adjectives_test() ->
+    #letter{predicates = [P|_]} = xmpp_herald:letter_from_binary(<<"<iq id='", ?ANY_SUBJECT/binary, "'><onOffer id='", ?ANY_ID/binary, "'><test1 a='a'/><test2 b='b'/></onOffer></iq>">>),
+    M = xmpp_herald:merge_adjectives(P),
+    lager:debug("M: ~p ~n", [M]),
+    ?assertEqual(#{<<"a">> => <<"a">>,<<"b">> => <<"b">>,<<"id">> => <<"*ID*">>}, M).
 
 work(_L, _LP) ->
     lager:debug("Test Work: ~p on: ~p ~n", [_L, _LP]),
