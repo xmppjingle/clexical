@@ -9,3 +9,5 @@
 -callback predicate_from_elem(Elem::#xmlel{}, Author::binary(), Envelop::#xmlel{}|undefined) -> #predicate{}|undefined.
 
 -callback validate(#predicate{}) -> #predicate{}|undefined.
+
+-callback proclaim(#letter{}) -> ok|error.

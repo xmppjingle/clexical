@@ -74,6 +74,13 @@ handle_info({Pid, linguist} = Cast, #hdata{linguist = Linguist} = S) ->
     Pid ! {linguist, Linguist},
     {noreply, S};
 
+handle_info({proclaim, #letter{via = Via} = L}, #hdata{linguist = ?MODULE} = S) ->
+	lager:debug("No Proclamation: ~p -> ~p~n", [L, Via]),
+	{noreply, S};
+handle_info({proclaim, #letter{} = L}, #hdata{linguist = Linguist} = S) ->
+	spawn(Linguist, proclaim, [L]),
+	{noreply, S};
+
 handle_info(_Info, S) ->
     lager:debug("Info: ~p  ~n", [_Info]),
     {noreply, S}.
@@ -96,17 +103,8 @@ initialize(Opts) ->
 	start_link(Opts).
 
 -spec proclaim(#letter{}) -> ok|error.
-proclaim(#letter{via = Via}=L) -> 
-	lager:debug("No Proclamation: ~p -> ~p~n", [L, Via]).
-	% ,
-	% case erlang:is_pid(Via) of
-	% 	true ->
-	% 		Bin = to_binary(L),
-	% 		Via ! {send, Bin};
-	% 	_ ->
-	% 		lager:debug("No Destination: ~p ~n", [L]),
-	% 		ok
-	% end.
+proclaim(L) -> 
+	?MODULE ! {proclaim, L}.
 
 -spec letter_from_binary(Binary :: binary()) -> undefined|#letter{}.
 letter_from_binary(Bin) ->
