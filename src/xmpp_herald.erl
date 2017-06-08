@@ -233,7 +233,6 @@ process_letter(Letter) ->
 			?OK;
 		#letter{type = bulletin} -> 
 			clexical:attend(Letter),
-			clexical:proclaim(Letter),
 			?OK;
 		_ ->
 			?ERROR

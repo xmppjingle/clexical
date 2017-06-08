@@ -64,6 +64,7 @@ handle_cast({recite, #letter{}=Letter},#state{herald=Herald}=State) ->
 handle_cast({attend, #letter{}=Letter}, #state{herald=Herald}=State) ->
     lager:debug("Hear Letter: ~p~n", [Herald:to_binary(Letter)]),
     spawn_monitor(?MODULE, hear, [Letter, State]),
+    spawn_monitor(?MODULE, proclaim, [Letter, State]),
     {noreply, State};
 handle_cast({proclaim, #letter{}=Letter}, #state{herald=Herald}=State) ->
     lager:debug("Proclaim Letter: ~p~n", [Herald:to_binary(Letter)]),
