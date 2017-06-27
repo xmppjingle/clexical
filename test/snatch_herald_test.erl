@@ -32,3 +32,19 @@ basic_parse_test() ->
     [P|_] = L#letter.predicates, 
     K = xmpp_herald:excerpts(P),
     ?assert(K /= undefined).
+
+basic_cleanup_test() ->
+    Bin = <<"<decree>
+            <offer id='1' subject='bestbuy' good='case'>
+                <onPurchase>
+                            <celebrate/>
+                </onPurchase>
+            </offer>
+            </decree>">>,
+    X = fxml_stream:parse_element(Bin),
+    CX = clexical_utils:remove_whitespaces_deeply(X),
+    lager:debug("Dirty XML: ~p ~n", [X]),
+    lager:debug("Clean XML: ~p ~n", [CX]),
+    ?assertEqual(
+        {xmlel,<<"decree">>,[],[{xmlel,<<"offer">>,[{<<"id">>,<<"1">>},{<<"subject">>,<<"bestbuy">>},{<<"good">>,<<"case">>}],[{xmlel,<<"onPurchase">>,[],[{xmlel,<<"celebrate">>,[],[]}]}]}]},
+        CX).

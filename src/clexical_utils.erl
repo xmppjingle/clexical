@@ -31,14 +31,13 @@ remove_whitespaces_deeply2(undefined) ->
 remove_whitespaces_deeply2(Children) ->
     remove_whitespaces_deeply3(Children, []).
 
-remove_whitespaces_deeply3([El | Rest], Result)
-  when is_record(El, xmlel)->
+remove_whitespaces_deeply3([#xmlel{} = El | Rest], Result) ->
     New_El = remove_whitespaces_deeply(El),
     remove_whitespaces_deeply3(Rest, [New_El | Result]);
-remove_whitespaces_deeply3([{xmlcdata, CData} | Rest], Result) ->
+remove_whitespaces_deeply3([{xmlcdata, _} = CData | Rest], Result) ->
     case is_whitespace(CData) of
         true  -> remove_whitespaces_deeply3(Rest, Result);
-        false -> remove_whitespaces_deeply3(Rest, [{xmlcdata, CData} | Result])
+        false -> remove_whitespaces_deeply3(Rest, [CData | Result])
     end;
 remove_whitespaces_deeply3([Other | Rest], Result) ->
     remove_whitespaces_deeply3(Rest, [Other | Result]);
