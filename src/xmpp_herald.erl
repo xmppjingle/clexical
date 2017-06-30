@@ -61,6 +61,8 @@ terminate(_, _) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
+handle_call({linguist}, _From, #hdata{linguist = Linguist} = S) ->
+    {reply, Linguist, S};
 handle_call(_Call, _From, S) ->
     lager:debug("Call: ~p  ~n", [_Call]),
     {reply, ok, S}.
@@ -86,17 +88,7 @@ handle_info(_Info, S) ->
     {noreply, S}.
 
 get_linguist() ->
-	?MODULE ! {self(), linguist},
-	receive
-		{linguist, Linguist} ->
-			Linguist;
-		_ ->
-			?MODULE
-		after
-			500 ->
-				lager:error("Failed to retrieve Linguist on: ~p  ~n", [?MODULE]),
-				?MODULE
-	end.
+	gen_server:call(?MODULE, {linguist}).
 
 initialize(Opts) ->
 	lager:debug("Initialize with ~p ~n", [Opts]),
