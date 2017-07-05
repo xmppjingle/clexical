@@ -113,7 +113,7 @@ letter_from_xmlel(#xmlel{children = Children, attrs = Attrs} = XML) ->
 	Subject = get_attr(<<"id">>, Attrs, ?ANY_SUBJECT),
 	Envelop = XML#xmlel{children = []},
 	P = [clexical:fill_subject(Predicate, Subject) || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author, Envelop) end, Children), Predicate /= undefined],
-	#letter{type = Linguist:get_envelop_type(XML), predicates=P, author=Author, recipient = Recipient, subject = Subject, envelop = Envelop, original = XML};
+	#letter{type = Linguist:get_envelop_type(XML), predicates = P, author = Author, recipient = Recipient, subject = Subject, envelop = Envelop, original = XML};
 letter_from_xmlel(_R) -> 
 	lager:info("Invalid Letter Type: ~p ~n", [_R]),
 	undefined.
@@ -161,7 +161,7 @@ predicate_from_elem(#xmlel{name = ActionName, attrs = Attribs} = E, Author, Enve
 	Subject = get_attr(<<"subject">>, Attribs, ?ANY_SUBJECT),
 	Adjectives = maps:from_list(Attribs),
 	Linguist = get_linguist(),
-	Linguist:validate(#predicate{id=ID, subject=Subject, action={Linguist:get_sentence_type(ActionName), ActionName}, adjectives=Adjectives, abstract=E, author = Author});
+	Linguist:validate(#predicate{id = ID, subject = Subject, action = {Linguist:get_sentence_type(ActionName), ActionName}, adjectives = Adjectives, abstract = E, author = Author});
 predicate_from_elem({xmlcdata, <<"\n">>}, _, _) -> undefined;
 predicate_from_elem({xmlcdata, Data}, _, _) ->
 	lager:debug("Received Data: ~p ~n", [Data]),

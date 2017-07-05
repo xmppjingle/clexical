@@ -4,7 +4,10 @@
 
 -export([
     remove_whitespaces_deeply/1,
-    is_whitespace/1
+    is_whitespace/1,
+    get_document/1,
+    list_files_from_dir/1,
+    proclaim_letters_from_dir/2
     ]).
 
 is_whitespace({xmlcdata, CData}) ->
@@ -43,3 +46,32 @@ remove_whitespaces_deeply3([Other | Rest], Result) ->
     remove_whitespaces_deeply3(Rest, [Other | Result]);
 remove_whitespaces_deeply3([], Result) ->
     lists:reverse(Result).
+
+list_files_from_dir(Dir) ->
+    case file:list_dir(Dir) of
+        {ok, List} -> lists:filter(fun([H|_T]) -> [H] /= "." end, List);
+        _ -> []
+    end.
+
+read_whole_file(FP) ->
+    case file:read_line(FP) of
+        {ok, [37|_LN]} ->
+            read_whole_file(FP);
+        {ok, LN} ->
+            LN ++ read_whole_file(FP);
+        _ ->
+            file:close(FP),
+            []
+    end.
+
+get_document(Filename) ->
+    case file:open(Filename, [read]) of
+        {ok, FP} ->
+            read_whole_file(FP);
+        {error,_} ->
+            'invalid_filename'
+    end.
+
+proclaim_letters_from_dir(Dir, Herald) ->
+    Files = list_files_from_dir(Dir),
+    lists:foreach(fun(F) -> {ok, Bin} = file:read_file(Dir++"/"++F), Herald:process_letter(Herald:letter_from_binary(Bin)) end, Files).
