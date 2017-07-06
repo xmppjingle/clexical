@@ -8,7 +8,8 @@
     get_document/1,
     list_files_from_dir/1,
     proclaim_letters_from_dir/2,
-    proclaim_letters_from_dir/3
+    proclaim_letters_from_dir/3,
+    proclaim_letters_from_dir/4
     ]).
 
 is_whitespace({xmlcdata, CData}) ->
@@ -76,5 +77,7 @@ get_document(Filename) ->
 proclaim_letters_from_dir(Dir, Herald) ->
     proclaim_letters_from_dir(Dir, Herald, #{}).
 proclaim_letters_from_dir(Dir, Herald, Adjs) ->
+    proclaim_letters_from_dir(Dir, Herald, Adjs, binary).    
+proclaim_letters_from_dir(Dir, Herald, Adjs, KeyType) ->
     Files = list_files_from_dir(Dir),
-    lists:foreach(fun(F) -> {ok, Bin} = file:read_file(Dir++"/"++F), Herald:process_letter(Herald:letter_from_binary(bbmustache:render(Bin, Adjs, [{key_type, binary}]))) end, Files).
+    lists:foreach(fun(F) -> {ok, Bin} = file:read_file(Dir++"/"++F), Herald:process_letter(Herald:letter_from_binary(bbmustache:render(Bin, Adjs, [{key_type, KeyType}]))) end, Files).
