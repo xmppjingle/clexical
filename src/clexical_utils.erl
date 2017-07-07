@@ -6,11 +6,13 @@
     remove_whitespaces_deeply/1,
     is_whitespace/1,
     get_document/1,
+    read_whole_file/1,
     list_files_from_dir/1,
     proclaim_letters_from_dir/2,
     proclaim_letters_from_dir/3,
     proclaim_letters_from_dir/4,
-    proclaim_template_for_values/3
+    proclaim_template_for_values/3,
+    render_process/4
     ]).
 
 is_whitespace({xmlcdata, CData}) ->
