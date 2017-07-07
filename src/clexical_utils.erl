@@ -98,7 +98,7 @@ proclaim_template_for_values(Herald, Filename, DictFilename) ->
     end.
 
 proclaim_template_for_values_(Herald, Template, FP) ->
-    case clexical_utils:map_from_file_line(FP) of
+    case bbmustache:map_from_file_line(FP) of
         eof ->
             ok;
         Map -> 
