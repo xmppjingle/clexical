@@ -6,10 +6,13 @@
     remove_whitespaces_deeply/1,
     is_whitespace/1,
     get_document/1,
+    read_whole_file/1,
     list_files_from_dir/1,
     proclaim_letters_from_dir/2,
     proclaim_letters_from_dir/3,
-    proclaim_letters_from_dir/4
+    proclaim_letters_from_dir/4,
+    proclaim_template_for_values/3,
+    render_process/4
     ]).
 
 is_whitespace({xmlcdata, CData}) ->
@@ -80,4 +83,25 @@ proclaim_letters_from_dir(Dir, Herald, Adjs) ->
     proclaim_letters_from_dir(Dir, Herald, Adjs, binary).    
 proclaim_letters_from_dir(Dir, Herald, Adjs, KeyType) ->
     Files = list_files_from_dir(Dir),
-    lists:foreach(fun(F) -> {ok, Bin} = file:read_file(Dir++"/"++F), Herald:process_letter(Herald:letter_from_binary(bbmustache:render(Bin, Adjs, [{key_type, KeyType}]))) end, Files).
+    lists:foreach(fun(F) -> {ok, Bin} = file:read_file(Dir++"/"++F), render_process(Herald, Bin, Adjs, KeyType) end, Files).
+
+render_process(Herald, Bin, Adjs, KeyType) ->
+    Herald:process_letter(Herald:letter_from_binary(bbmustache:render(Bin, Adjs, [{key_type, KeyType}]))).
+
+proclaim_template_for_values(Herald, Filename, DictFilename) ->
+    case file:open(DictFilename, [read]) of
+        {ok, FP} ->
+            Template = get_document(Filename),
+            proclaim_template_for_values_(Herald, Template, FP);
+        {error,_} ->
+            'invalid_filename'
+    end.
+
+proclaim_template_for_values_(Herald, Template, FP) ->
+    case bbmustache:map_from_file_line(FP) of
+        eof ->
+            ok;
+        Map -> 
+            render_process(Herald, Template, Map, binary),
+            proclaim_template_for_values_(Herald, Template, FP)
+    end.
