@@ -85,8 +85,10 @@ proclaim_letters_from_dir(Dir, Herald, Adjs, KeyType) ->
     Files = list_files_from_dir(Dir),
     lists:foreach(fun(F) -> {ok, Bin} = file:read_file(Dir++"/"++F), render_process(Herald, Bin, Adjs, KeyType) end, Files).
 
-render_process(Herald, Bin, Adjs, KeyType) ->
-    Herald:process_letter(Herald:letter_from_binary(bbmustache:render(Bin, Adjs, [{key_type, KeyType}]))).
+render_process(Herald, Bin, Adjs, KeyType) when is_binary(Bin) ->
+    Herald:process_letter(Herald:letter_from_binary(bbmustache:render(Bin, Adjs, [{key_type, KeyType}])));
+render_process(Herald, List, Adjs, KeyType) when is_list(List) ->
+    render_process(Herald, erlang:list_to_binary(List), Adjs, KeyType).
 
 proclaim_template_for_values(Herald, Filename, DictFilename) ->
     case file:open(DictFilename, [read]) of
