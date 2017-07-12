@@ -7,7 +7,7 @@
 	subject = <<>> :: binary(),
 	author = undefined :: any(),
 	action :: {kind(), binary()}, 
-	adjectives = undefined :: map()|undefined, 
+	adjectives = #{} :: map(), 
 	abstract = undefined :: any()
 	}).
 

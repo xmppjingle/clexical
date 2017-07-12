@@ -37,7 +37,8 @@
 	get_attr/2,
 	get_attr/3,
 	camel/1,
-	merge_adjectives/1
+	merge_adjectives/1,
+	merge_adjectives/2
 	]).
 
 -define(OK, <<"<ok/>">>).
@@ -210,13 +211,23 @@ get_attr(_ID, _, Default) ->
 	Default.
 
 merge_adjectives(#predicate{adjectives = Adjs} = P) ->
-	merge_adjectives_(excerpts(P), Adjs).
+	merge_adjectives_(excerpts(P), Adjs);
+merge_adjectives(_) -> #{}.
 
-merge_adjectives_([], Adjs) ->
-	Adjs;
 merge_adjectives_([#predicate{adjectives = Adjs} = P| R], MergedAdjs) ->
 	M = merge_adjectives_(excerpts(P), MergedAdjs),
-	merge_adjectives_(R, maps:merge(M, Adjs)).
+	merge_adjectives_(R, maps:merge(M, Adjs));
+merge_adjectives_([], Adjs) ->
+	Adjs.
+
+merge_adjectives(#predicate{} = P1, #predicate{} = P2) ->
+	maps:merge(merge_adjectives(P1), merge_adjectives(P2));
+merge_adjectives(#predicate{} = P1, _) ->
+	merge_adjectives(P1);
+merge_adjectives(_, #predicate{} = P2) ->
+	merge_adjectives(P2);
+merge_adjectives(_, _) ->
+	#{}.
 
 process_letter(Letter) ->
 	case Letter of
