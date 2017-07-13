@@ -12,6 +12,10 @@
 	recall/1
 	]).
 
+-export([
+	clear/0
+	]).
+
 -spec initialize(Opts :: any()) -> ok|error.
 initialize(_Opts) ->
 	mnesia:start(),
@@ -37,3 +41,6 @@ recall(ID) ->
 		_ ->
 			undefined
 	end.
+
+clear() ->
+	mnesia:clear_table(envelope).
