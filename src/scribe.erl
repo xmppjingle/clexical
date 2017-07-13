@@ -5,3 +5,4 @@
 
 -callback curb(Key :: binary(), P :: #predicate{}) -> ok|error.
 -callback recall(Key :: binary()) -> #predicate{}|undefined.
+-callback clear() -> ok|error.
