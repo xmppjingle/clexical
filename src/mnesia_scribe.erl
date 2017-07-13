@@ -43,4 +43,9 @@ recall(ID) ->
 	end.
 
 clear() ->
-	mnesia:clear_table(envelope).
+	case mnesia:clear_table(envelope) of
+		{_, ok} ->
+			ok;
+		_ ->
+			error
+	end.
