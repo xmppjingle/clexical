@@ -47,6 +47,13 @@ merge_adjectives_test() ->
     lager:debug("M: ~p ~n", [M]),
     ?assertEqual(#{<<"a">> => <<"a">>,<<"b">> => <<"b">>,<<"id">> => <<"*ID*">>}, M).
 
+merge_adjectives_letters_test() ->
+    #letter{predicates = [P|_]} = xmpp_herald:letter_from_binary(<<"<iq id='", ?ANY_SUBJECT/binary, "'><onOffer id='", ?ANY_ID/binary, "'><test1 a='a'/><test2 b='b'/></onOffer></iq>">>),
+    #letter{predicates = [PP|_]} = xmpp_herald:letter_from_binary(<<"<iq id='", ?ANY_SUBJECT/binary, "'><onOffer id='", ?ANY_ID/binary, "'><test1 c='c'/><test2 d='d'/></onOffer></iq>">>),
+    MM = xmpp_herald:merge_adjectives(P, PP),
+    lager:debug("MM: ~p ~n", [MM]),
+    ?assertEqual(MM, #{<<"a">> => <<"a">>,<<"b">> => <<"b">>,<<"c">> => <<"c">>,<<"d">> => <<"d">>,<<"id">> => <<"*ID*">>}).
+
 work(_L, _LP) ->
     lager:debug("Test Work: ~p on: ~p ~n", [_L, _LP]),
     ok.
