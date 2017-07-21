@@ -42,7 +42,7 @@ handle_call(fresh_id, _From, #state{id=LID}=State) ->
     {{_, _, D}, _} = calendar:local_time(),
     BID = erlang:integer_to_binary(ID),
     BD = erlang:integer_to_binary(D),
-    {reply, <<BD/binary, "@", BID/binary>>, State#state{id=ID}};
+    {reply, <<BD/binary, "=", BID/binary>>, State#state{id=ID}};
 
 handle_call(Info, _From, _State) ->
     lager:info("Received Call: ~p~n", [Info]),
