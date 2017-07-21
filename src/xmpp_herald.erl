@@ -154,6 +154,11 @@ excerpts(#predicate{abstract=#xmlel{children = Kin} = XML, author=Author, subjec
 	Linguist = get_linguist(),
 	Envelop = XML#xmlel{children = []},
 	[ clexical:fill_subject(Predicate, Subject) || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author, Envelop) end, Kin), Predicate /= undefined];
+excerpts(#predicate{abstract = BinXML, author=Author, subject = Subject}) when is_binary(BinXML) ->
+	Linguist = get_linguist(),
+	#xmlel{children = Kin} = XML = clexical_utils:remove_whitespaces_deeply(fxml_stream:parse_element(BinXML)),
+	Envelop = XML#xmlel{children = []},
+	[ clexical:fill_subject(Predicate, Subject) || Predicate <- lists:map(fun(E) -> Linguist:predicate_from_elem(E, Author, Envelop) end, Kin), Predicate /= undefined];
 excerpts(_) ->
 	[].
 
