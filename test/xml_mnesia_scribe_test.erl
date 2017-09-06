@@ -24,7 +24,12 @@ init_per_suite() ->
     ok.
 
 end_per_suite(_Config) ->
-    clexical:terminate(ok, ok),
+    application:stop(clexical),
+    application:unload(clexical),
+    application:stop(clexical_id),
+    application:unload(clexical_id),
+    gen_server:stop(clexical),
+    gen_server:stop(clexical_id),
     ok.
 
 basic_bear_in_mind_test() ->

@@ -32,13 +32,13 @@ setup_test_() ->
     Herald = proplists:get_value(herald, ClexiCfg),
     Scribe = proplists:get_value(scribe, ClexiCfg),
     Vassal = proplists:get_value(vassal, ClexiCfg),
-    % {ok, _} = clexical:start_link({clexical_test, Herald}, {clexical_test, Scribe}, {clexical_test, Vassal}),
+    lager:debug("Apps: ~p ~n", [application:which_applications()]),
+    {ok, _} = clexical:start_link({clexical_test, Herald}, {clexical_test, Scribe}, {clexical_test, Vassal}),
 
     {setup,
-        spawn,
         fun init_per_suite/0,
         fun end_per_suite/1,
-        fun(_Config) -> {timeout, 4, ?_test(single_execution())} end
+        fun(_Config) -> {timeout, 4, ?_test(single_execution()) } end
     }.
 
 init_per_suite() ->
@@ -47,6 +47,8 @@ init_per_suite() ->
 end_per_suite(_Config) ->
     meck:unload(),
     clexical:terminate(ok, ok),
+    application:stop(clexical),
+    application:unload(clexical),
     ok.
 
 single_execution() ->
