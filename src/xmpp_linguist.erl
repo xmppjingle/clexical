@@ -1,6 +1,6 @@
 -module(xmpp_linguist).
 -include("../include/clexical.hrl").
--include_lib("xmpp.hrl").
+-include_lib("fast_xml/include/fxml.hrl").
 
 -callback get_envelop_type(Envelop::#xmlel{}) -> decree|bulletin|undefined.
 
