@@ -10,11 +10,9 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    [Conf] = confetti:fetch(mgmt_conf),
-    Config = proplists:get_value(clexical, Conf, []),
-    Herald = proplists:get_value(herald, Config),
-    Scribe = proplists:get_value(scribe, Config),
-    Vassal = proplists:get_value(vassal, Config),
+    Herald = application:get_env('clexical', herald, []),
+    Scribe = application:get_env('clexical', scribe, []),
+    Vassal = application:get_env('clexical', vassal, []),
     clexical_sup:start_link([Herald, Scribe, Vassal]).
 
 stop(_State) ->
