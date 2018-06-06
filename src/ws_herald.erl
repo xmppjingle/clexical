@@ -14,7 +14,7 @@
 end).
 
 -define(Parse(XML), begin
-    exmpp_xml:remove_whitespaces_deeply(lists:nth(1, exmpp_xml:parse_document(XML,[{names_as_atom, true}])))  
+    xmpp_utils:rwp(fxml_stream:parse_element(XML))
 end). 
 
 -export([
