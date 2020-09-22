@@ -89,7 +89,7 @@ handle_info(_Info, S) ->
     {noreply, S}.
 
 get_linguist() ->
-	gen_server:call(?MODULE, {linguist}).
+	?MODULE.% gen_server:call(?MODULE, {linguist}).
 
 initialize(Opts) ->
 	lager:debug("Initialize with ~p ~n", [Opts]),

@@ -5,7 +5,7 @@
 -include("../include/clexical_test.hrl").
 
 setup_test_() ->
-    application:start(xmpp),
+    application:start(fast_xml),
     ?start_lager(),
     {setup,
         spawn,

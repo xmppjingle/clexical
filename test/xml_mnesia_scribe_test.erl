@@ -5,10 +5,10 @@
 -include("../include/clexical_test.hrl").
 
 setup_test_() ->
+    application:ensure_all_started(mnesia),
     clexical_id:start_link([]),
     clexical:start_link({xmpp_herald, []}, {mnesia_scribe, []}, {?MODULE, []}),
     ?start_lager(),
-    ?start_apps(),
     {setup,
         spawn,
         fun init_per_suite/0,

@@ -21,3 +21,4 @@ eunit.coverage.xml
 .rebar/*
 
 .rebar/erlcinfo
+_build/**

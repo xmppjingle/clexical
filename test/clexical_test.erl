@@ -25,13 +25,12 @@
 ]).
 
 setup_test_() ->
-    ?meck_confetti([?CONFIG]),
     ?start_lager(),
-    [Conf] = confetti:fetch(mgmt_conf),
-    ClexiCfg = proplists:get_value(clexical, Conf, []),
-    Herald = proplists:get_value(herald, ClexiCfg),
-    Scribe = proplists:get_value(scribe, ClexiCfg),
-    Vassal = proplists:get_value(vassal, ClexiCfg),
+    application:ensure_all_started(fast_xml),
+    % ClexiCfg = proplists:get_value(clexical, Conf, []),
+    Herald = application:get_env('clexical', herald, { ?MODULE, [{port, 8084}]}),
+    Scribe = application:get_env('clexical', scribe, { ?MODULE, [{port, 8084}]}),
+    Vassal = application:get_env('clexical', vassal, { ?MODULE, [{port, 8084}]}),
     lager:debug("Apps: ~p ~n", [application:which_applications()]),
     {ok, _} = clexical:start_link({clexical_test, Herald}, {clexical_test, Scribe}, {clexical_test, Vassal}),
 
