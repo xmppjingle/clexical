@@ -122,7 +122,8 @@ verify_signature(#webhook_reg{secret = Secret}, Body, Req) ->
 
 hmac_hex(Secret, Body) ->
     Mac = crypto:mac(hmac, sha256, Secret, Body),
-    binary:encode_hex(Mac, lowercase).
+    %% binary:encode_hex/2 with lowercase is OTP 26+; use lowercase/1 for compat.
+    list_to_binary(string:lowercase(binary_to_list(binary:encode_hex(Mac)))).
 
 constant_compare(A, B) when byte_size(A) =:= byte_size(B) ->
     crypto:hash(sha256, A) =:= crypto:hash(sha256, B);

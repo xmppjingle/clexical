@@ -68,8 +68,10 @@ work(#letter{predicates = [#predicate{action = {verb, <<"triggerAutomation">>},
                                        adjectives = Adjs} | _]} = Letter, _LP) ->
     gen_server:cast(?MODULE, {fire, maps:get(<<"id">>, Adjs, undefined)}),
     Letter;
-work(Letter, _LP) ->
-    Letter.
+work(Letter, LP) ->
+    %% Delegate unrecognised predicates to webhook_vassal so that
+    %% do:webhook action predicates are handled transparently.
+    webhook_vassal:work(Letter, LP).
 
 %% ---------------------------------------------------------------------------
 %% Public API

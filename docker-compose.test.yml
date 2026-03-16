@@ -1,0 +1,30 @@
+##
+## docker-compose.test.yml — Clexical test runner
+##
+## Usage:
+##   ./run_tests.sh                  # unit + integration tests
+##   ./run_tests.sh --stress         # also run stress benchmark
+##   ./run_tests.sh --stress -n 1000 -c 50   # custom load parameters
+##
+
+services:
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    image: clexical-test:latest
+    environment:
+      # Stress test parameters (used when RUN_STRESS=1)
+      STRESS_N: "${STRESS_N:-200}"
+      STRESS_C: "${STRESS_C:-20}"
+      RUN_STRESS: "${RUN_STRESS:-0}"
+      # Mnesia persistence for test run
+      CLEXICAL_MNESIA_DIR: /data/mnesia/test
+    volumes:
+      - test-mnesia:/data/mnesia
+    # Prevent test ports from conflicting with production
+    # (tests start the app internally on 18089/18099, no port binding needed)
+
+volumes:
+  test-mnesia:
+    driver: local

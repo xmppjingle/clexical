@@ -1,0 +1,47 @@
+# ---- Test Runner Image ----
+# Compiles clexical in test mode and runs Common Test suites.
+# Does NOT produce a release; this image is purely for CI/test runs.
+#
+# Usage:
+#   docker build -f Dockerfile.test -t clexical-test .
+#   docker run --rm clexical-test                        # unit + integration
+#   docker run --rm -e RUN_STRESS=1 clexical-test        # include stress suite
+#   docker run --rm -e STRESS_N=1000 -e STRESS_C=50 \
+#                  -e RUN_STRESS=1 clexical-test          # custom load
+
+FROM erlang:26-alpine AS test-builder
+
+RUN apk add --no-cache git build-base curl
+
+WORKDIR /app
+
+# Install rebar3 (OTP 26 compatible)
+RUN curl -fsSL https://github.com/erlang/rebar3/releases/download/3.24.0/rebar3 \
+         -o /usr/local/bin/rebar3 \
+    && chmod +x /usr/local/bin/rebar3
+
+# Fetch deps (separate layer so src changes don't re-fetch)
+COPY rebar.config rebar.lock ./
+RUN rebar3 as test get-deps
+
+# Copy full source
+COPY . .
+
+# Compile everything (app + test suites)
+RUN rebar3 as test compile
+
+# Mnesia needs a writable dir
+RUN mkdir -p /data/mnesia/test
+
+ENV CLEXICAL_MNESIA_DIR=/data/mnesia/test \
+    ERL_AFLAGS="-kernel shell_history enabled" \
+    STRESS_N=200 \
+    STRESS_C=20 \
+    RUN_STRESS=0
+
+VOLUME ["/data/mnesia"]
+
+COPY docker-test-entrypoint.sh /usr/local/bin/run_tests.sh
+RUN chmod +x /usr/local/bin/run_tests.sh
+
+ENTRYPOINT ["/usr/local/bin/run_tests.sh"]
