@@ -7,6 +7,17 @@
 %%   POST /api/v1/letters          → submit a decree (stored + executed)
 %%   POST /api/v1/attend           → full round-trip (hear + proclaim)
 %%   POST /api/v1/recite           → execute verbs only
+%%
+%% Content negotiation
+%% -------------------
+%%   Request body auto-detected by first byte:
+%%     '<'  → XML  (application/xml or text/xml)
+%%     '{'  → JSON (application/json) [default]
+%%
+%%   Response format follows the Accept header (or mirrors request Content-Type):
+%%     Accept: application/xml  → XML response
+%%     Accept: application/json → JSON response [default]
+%%
 %%   GET  /api/v1/automations      → list permanent automations
 %%   POST /api/v1/automations      → register permanent automation
 %%   DELETE /api/v1/automations/:id → remove automation
@@ -47,6 +58,9 @@
 %% Conversion helpers used by handlers and automation_vassal
 -export([json_to_letter/1, letter_to_json/1, predicate_to_map/1, map_to_predicate/1]).
 
+%% Content-type helpers used by cowboy handlers
+-export([parse_body/2, reply_letter/4, content_type/1]).
+
 -define(DEFAULT_PORT, 8080).
 
 -record(state, {port, ref}).
@@ -65,7 +79,10 @@ proclaim(#letter{} = Letter) ->
 
 letter_from_binary(Bin) when is_binary(Bin) ->
     try
-        json_to_letter(jsone:decode(Bin, [{object_format, map}]))
+        case Bin of
+            <<"<", _/binary>> -> xml_letter:from_binary(Bin);
+            _                 -> json_to_letter(jsone:decode(Bin, [{object_format, map}]))
+        end
     catch
         _:_ -> undefined
     end.
@@ -74,6 +91,64 @@ to_binary(#letter{} = Letter) ->
     jsone:encode(letter_to_json(Letter));
 to_binary(_) ->
     <<>>.
+
+%% ---------------------------------------------------------------------------
+%% Content-type helpers (for cowboy handlers)
+%% ---------------------------------------------------------------------------
+
+%% Parse a raw request body into a #letter{}, respecting Content-Type.
+%% Falls back to auto-detection (first-byte sniffing) when Content-Type
+%% is absent or generic.
+-spec parse_body(binary(), cowboy_req:req()) -> #letter{} | undefined.
+parse_body(Body, Req) ->
+    CT = cowboy_req:header(<<"content-type">>, Req, <<"application/json">>),
+    case is_xml_content_type(CT) of
+        true  -> xml_letter:from_binary(Body);
+        false -> letter_from_binary(Body)   %% auto-detect handles both
+    end.
+
+%% Serialise a letter with format chosen by the request's Accept header.
+%% If no preference is given, mirrors the request Content-Type.
+-spec reply_letter(integer(), #letter{} | map(), cowboy_req:req(), any()) ->
+    {ok, cowboy_req:req(), any()}.
+reply_letter(Status, Body, Req, State) when is_map(Body) ->
+    %% Map body (e.g. error responses) — always JSON
+    Req2 = cowboy_req:reply(Status,
+        #{<<"content-type">> => <<"application/json">>},
+        jsone:encode(Body), Req),
+    {ok, Req2, State};
+reply_letter(Status, #letter{} = Letter, Req, State) ->
+    {CT, RespBin} = serialise(Letter, Req),
+    Req2 = cowboy_req:reply(Status, #{<<"content-type">> => CT}, RespBin, Req),
+    {ok, Req2, State}.
+
+%% Determine the response content-type a client prefers.
+-spec content_type(cowboy_req:req()) -> json | xml.
+content_type(Req) ->
+    Accept = cowboy_req:header(<<"accept">>, Req, <<>>),
+    CT     = cowboy_req:header(<<"content-type">>, Req, <<>>),
+    case is_xml_mime(Accept) orelse
+         (Accept =:= <<>> andalso is_xml_content_type(CT)) of
+        true  -> xml;
+        false -> json
+    end.
+
+%% ---------------------------------------------------------------------------
+%% Internal serialisation helpers
+%% ---------------------------------------------------------------------------
+
+serialise(Letter, Req) ->
+    case content_type(Req) of
+        xml  -> {<<"application/xml; charset=utf-8">>, xml_letter:to_binary(Letter)};
+        json -> {<<"application/json">>,               to_binary(Letter)}
+    end.
+
+is_xml_content_type(CT) ->
+    is_xml_mime(CT).
+
+is_xml_mime(<<>>) -> false;
+is_xml_mime(Mime) ->
+    binary:match(Mime, [<<"application/xml">>, <<"text/xml">>]) =/= nomatch.
 
 %% Excerpts extracts sub-predicates from a predicate's abstract payload.
 %% If abstract is a JSON binary carrying a nested letter, its predicates

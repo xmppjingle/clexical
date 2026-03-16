@@ -2,7 +2,8 @@
 %% http_recite_handler — POST /api/v1/recite
 %%
 %% Execute verbs in the letter without the hear/recall phase.
-%% The vassal executes work directly; responses come back via proclaim.
+%% Accepts both JSON (application/json) and XML (application/xml / text/xml).
+%% Auto-detects format from the first byte when Content-Type is absent.
 %%
 
 -module(http_recite_handler).
@@ -22,18 +23,18 @@ handle(Req0, State) ->
     case cowboy_req:method(Req0) of
         <<"POST">> ->
             {ok, Body, Req1} = cowboy_req:read_body(Req0),
-            case http_herald:letter_from_binary(Body) of
+            case http_herald:parse_body(Body, Req1) of
                 undefined ->
-                    reply_json(400, #{<<"error">> => <<"invalid_json">>}, Req1, State);
+                    reply(400, #{<<"error">> => <<"invalid_body">>}, Req1, State);
                 #letter{} = Letter ->
                     clexical:recite(Letter),
-                    reply_json(202, #{<<"status">> => <<"reciting">>}, Req1, State)
+                    reply(202, #{<<"status">> => <<"reciting">>}, Req1, State)
             end;
         _ ->
-            reply_json(405, #{<<"error">> => <<"method_not_allowed">>}, Req0, State)
+            reply(405, #{<<"error">> => <<"method_not_allowed">>}, Req0, State)
     end.
 
-reply_json(Status, Map, Req0, State) ->
+reply(Status, Map, Req0, State) ->
     Req = cowboy_req:reply(Status,
         #{<<"content-type">> => <<"application/json">>},
         jsone:encode(Map), Req0),

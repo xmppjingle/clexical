@@ -11,6 +11,7 @@
             crypto,
             inets,
             ssl,
+            xmerl,
             mnesia,
             cowboy,
             jsone,

@@ -1,9 +1,9 @@
 %%
 %% clexical_integration_SUITE — End-to-end HTTP integration tests.
 %%
-%% 55 test cases covering:
+%% 66 test cases covering:
 %%   Health, Auth, Recite, Attend, Letters, Automations, Webhooks,
-%%   and complex multi-predicate letter scripts.
+%%   complex multi-predicate letter scripts, and XML format.
 %%
 %% The full clexical application is started on port 18089 in init_per_suite
 %% and stopped in end_per_suite.  All HTTP calls use httpc (OTP built-in).
@@ -12,6 +12,7 @@
 
 -include_lib("common_test/include/ct.hrl").
 -include_lib("stdlib/include/assert.hrl").
+-include("../include/clexical.hrl").
 
 -define(PORT,    18089).
 -define(API_KEY, "test-api-key-clexical").
@@ -50,6 +51,11 @@
          webhooks_inbound_qs_params/1, webhooks_inbound_unknown/1,
          webhooks_inbound_valid_hmac/1, webhooks_inbound_invalid_hmac/1,
          webhooks_register_and_trigger/1]).
+%% XML format
+-export([xml_recite_simple/1, xml_recite_multi_predicate/1,
+         xml_attend_decree/1, xml_roundtrip_json_to_xml/1,
+         xml_roundtrip_xml_to_json/1, xml_content_type_header/1,
+         xml_accept_header/1, xml_nested_abstract/1]).
 %% Complex scripts
 -export([script_on_if_do_full/1, script_nested_abstract/1,
          script_three_actions/1, script_mixed_preposition_verb/1,
@@ -68,6 +74,7 @@ all() ->
      {group, letters},
      {group, automations},
      {group, webhooks},
+     {group, xml},
      {group, scripts}].
 
 groups() ->
@@ -94,6 +101,10 @@ groups() ->
                            webhooks_inbound_qs_params, webhooks_inbound_unknown,
                            webhooks_inbound_valid_hmac, webhooks_inbound_invalid_hmac,
                            webhooks_register_and_trigger]},
+        {xml,         [], [xml_recite_simple, xml_recite_multi_predicate,
+                           xml_attend_decree, xml_roundtrip_json_to_xml,
+                           xml_roundtrip_xml_to_json, xml_content_type_header,
+                           xml_accept_header, xml_nested_abstract]},
         {scripts,     [], [script_on_if_do_full, script_nested_abstract,
                            script_three_actions, script_mixed_preposition_verb,
                            script_full_rule_trigger, script_automation_fires_letter,
@@ -706,8 +717,152 @@ script_deep_nested_abstract(_Config) ->
     ?assertEqual(202, ct_helper:status(R)).
 
 %% ---------------------------------------------------------------------------
+%% XML FORMAT TESTS
+%% ---------------------------------------------------------------------------
+
+xml_recite_simple(_Config) ->
+    Body = <<"<letter subject=\"order-xml-1\" author=\"test\" type=\"decree\">\n"
+             "  <predicate action_type=\"verb\" action=\"do:notify\">\n"
+             "    <channel>slack</channel>\n"
+             "    <to>#ops</to>\n"
+             "  </predicate>\n"
+             "</letter>">>,
+    R = xml_post(api("/recite"), Body),
+    ?assertEqual(202, ct_helper:status(R)).
+
+xml_recite_multi_predicate(_Config) ->
+    Body = <<"<letter subject=\"order-xml-2\" author=\"checkout\" type=\"decree\">\n"
+             "  <predicate action_type=\"verb\" action=\"on:create\">\n"
+             "    <entity>order</entity>\n"
+             "    <source>web</source>\n"
+             "  </predicate>\n"
+             "  <predicate action_type=\"preposition\" action=\"if:fieldValue\">\n"
+             "    <field>amount</field>\n"
+             "    <op>gt</op>\n"
+             "    <value>500</value>\n"
+             "  </predicate>\n"
+             "  <predicate action_type=\"verb\" action=\"do:transitionStatus\">\n"
+             "    <to>pending_review</to>\n"
+             "  </predicate>\n"
+             "  <predicate action_type=\"verb\" action=\"do:notify\">\n"
+             "    <channel>email</channel>\n"
+             "    <to>reviewer@example.com</to>\n"
+             "    <message>High-value order needs review</message>\n"
+             "  </predicate>\n"
+             "</letter>">>,
+    R = xml_post(api("/recite"), Body),
+    ?assertEqual(202, ct_helper:status(R)).
+
+xml_attend_decree(_Config) ->
+    Body = <<"<letter subject=\"ticket-xml-1\" author=\"system\" type=\"decree\">\n"
+             "  <predicate action_type=\"preposition\" action=\"if:status\">\n"
+             "    <op>eq</op>\n"
+             "    <value>open</value>\n"
+             "  </predicate>\n"
+             "  <predicate action_type=\"verb\" action=\"do:fieldUpdate\">\n"
+             "    <field>priority</field>\n"
+             "    <value>high</value>\n"
+             "  </predicate>\n"
+             "</letter>">>,
+    R = xml_post(api("/attend"), Body),
+    ?assertEqual(202, ct_helper:status(R)).
+
+xml_roundtrip_json_to_xml(_Config) ->
+    %% Send JSON, verify the engine accepted it (202); then check xml_letter
+    %% can roundtrip the same letter.
+    JsonBody = ct_helper:make_letter(uid(<<"rt-json">>),
+                   [ct_helper:make_verb(<<"do:notify">>,
+                                        #{<<"channel">> => <<"ops">>})]),
+    {ok, {{_, 202, _}, _, _}} = ct_helper:http_post(api("/recite"), ?KEY, JsonBody),
+    %% Now construct the equivalent letter with xml_letter and check it parses
+    XmlBody = <<"<letter subject=\"rt-xml\" author=\"system\" type=\"decree\">\n"
+                "  <predicate action_type=\"verb\" action=\"do:notify\">\n"
+                "    <channel>ops</channel>\n"
+                "  </predicate>\n"
+                "</letter>">>,
+    Letter = xml_letter:from_binary(XmlBody),
+    ?assertMatch(#letter{type = decree}, Letter),
+    [P] = Letter#letter.predicates,
+    ?assertEqual({verb, <<"do:notify">>}, P#predicate.action),
+    ?assertEqual(#{<<"channel">> => <<"ops">>}, P#predicate.adjectives).
+
+xml_roundtrip_xml_to_json(_Config) ->
+    %% Parse XML letter, serialise to JSON, parse back — fields preserved
+    XmlBody = <<"<letter subject=\"rt2\" author=\"tester\" type=\"bulletin\">\n"
+                "  <predicate action_type=\"preposition\" action=\"if:actor\">\n"
+                "    <actor>admin</actor>\n"
+                "  </predicate>\n"
+                "</letter>">>,
+    Letter  = xml_letter:from_binary(XmlBody),
+    JsonBin = http_herald:to_binary(Letter),
+    Map     = jsone:decode(JsonBin, [{object_format, map}]),
+    ?assertEqual(<<"rt2">>,     maps:get(<<"subject">>, Map)),
+    ?assertEqual(<<"bulletin">>, maps:get(<<"type">>, Map)),
+    [PMap]  = maps:get(<<"predicates">>, Map),
+    ?assertEqual(<<"if:actor">>,    maps:get(<<"action">>, PMap)),
+    ?assertEqual(<<"preposition">>, maps:get(<<"action_type">>, PMap)).
+
+xml_content_type_header(_Config) ->
+    %% Explicitly send Content-Type: application/xml
+    XmlBody = <<"<letter subject=\"ct-xml\" author=\"test\" type=\"decree\">\n"
+                "  <predicate action_type=\"verb\" action=\"do:notify\">\n"
+                "    <channel>log</channel>\n"
+                "  </predicate>\n"
+                "</letter>">>,
+    R = httpc:request(post,
+            {api("/recite"),
+             [{"x-api-key", ?API_KEY}, {"content-type", "application/xml"}],
+             "application/xml", XmlBody},
+            [{timeout, 5000}], [{body_format, binary}]),
+    ?assertEqual(202, ct_helper:status(R)).
+
+xml_accept_header(_Config) ->
+    %% Send JSON, request XML response — letter-carrying endpoints return
+    %% a simple status map so we just verify 202 and valid response.
+    JsonBody = ct_helper:make_letter(uid(<<"accept-xml">>), []),
+    R = httpc:request(post,
+            {api("/recite"),
+             [{"x-api-key", ?API_KEY}, {"accept", "application/xml"}],
+             "application/json", JsonBody},
+            [{timeout, 5000}], [{body_format, binary}]),
+    ?assertEqual(202, ct_helper:status(R)).
+
+xml_nested_abstract(_Config) ->
+    %% A <predicate> whose <abstract> contains a nested <letter>
+    XmlBody = <<"<letter subject=\"parent\" author=\"system\" type=\"decree\">\n"
+                "  <predicate action_type=\"verb\" action=\"dispatch\">\n"
+                "    <abstract>\n"
+                "      <letter subject=\"child\" author=\"system\" type=\"decree\">\n"
+                "        <predicate action_type=\"verb\" action=\"do:notify\">\n"
+                "          <channel>ops</channel>\n"
+                "          <level>critical</level>\n"
+                "        </predicate>\n"
+                "      </letter>\n"
+                "    </abstract>\n"
+                "  </predicate>\n"
+                "</letter>">>,
+    %% Verify xml_letter parses it correctly
+    Letter = xml_letter:from_binary(XmlBody),
+    ?assertMatch(#letter{subject = <<"parent">>}, Letter),
+    [P] = Letter#letter.predicates,
+    ?assertEqual({verb, <<"dispatch">>}, P#predicate.action),
+    ?assertNotEqual(undefined, P#predicate.abstract),
+    %% The abstract should be a JSON-encoded sub-letter
+    SubLetter = http_herald:letter_from_binary(P#predicate.abstract),
+    ?assertMatch(#letter{subject = <<"child">>}, SubLetter),
+    %% Now recite it via HTTP
+    R = xml_post(api("/recite"), XmlBody),
+    ?assertEqual(202, ct_helper:status(R)).
+
+%% ---------------------------------------------------------------------------
 %% Internal helpers
 %% ---------------------------------------------------------------------------
+
+%% Post XML body with API key auth
+xml_post(Url, XmlBody) ->
+    httpc:request(post,
+        {Url, [{"x-api-key", ?API_KEY}], "application/xml", XmlBody},
+        [{timeout, 5000}], [{body_format, binary}]).
 
 url(Path) ->
     "http://localhost:" ++ integer_to_list(?PORT) ++ Path.
