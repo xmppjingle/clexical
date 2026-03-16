@@ -17,8 +17,9 @@ start_link(HeraldSpec, VassalSpec) ->
 
 init({{Herald, HOpts}, {Vassal, VOpts}}) ->
     Children = [
-        service_child(Herald, HOpts),
-        service_child(Vassal, VOpts)
+        service_child(Herald,         HOpts),
+        service_child(Vassal,         VOpts),
+        service_child(webhook_vassal, #{})
     ],
     {ok, {{one_for_one, 5, 10}, Children}}.
 

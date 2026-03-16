@@ -10,6 +10,12 @@
 %%   GET  /api/v1/automations      → list permanent automations
 %%   POST /api/v1/automations      → register permanent automation
 %%   DELETE /api/v1/automations/:id → remove automation
+%%   GET  /api/v1/webhooks         → list inbound webhook endpoints
+%%   POST /api/v1/webhooks         → register inbound webhook endpoint
+%%   GET  /api/v1/webhooks/:id     → get webhook endpoint by id
+%%   DELETE /api/v1/webhooks/:id   → remove webhook endpoint
+%%   GET  /api/v1/webhooks/in/:name → trigger inbound webhook (GET)
+%%   POST /api/v1/webhooks/in/:name → trigger inbound webhook (POST)
 %%   GET  /health                   → health check (no auth)
 %%
 %% API key authentication is required on all /api/* routes.
@@ -126,12 +132,17 @@ code_change(_OldVsn, State, _Extra) ->
 
 routes() ->
     [
-        {"/health",                    http_health_handler,      #{}},
-        {"/api/v1/letters",            http_letters_handler,     #{}},
-        {"/api/v1/attend",             http_attend_handler,      #{}},
-        {"/api/v1/recite",             http_recite_handler,      #{}},
-        {"/api/v1/automations",        http_automations_handler, #{}},
-        {"/api/v1/automations/:id",    http_automations_handler, #{}}
+        {"/health",                       http_health_handler,      #{}},
+        {"/api/v1/letters",               http_letters_handler,     #{}},
+        {"/api/v1/attend",                http_attend_handler,      #{}},
+        {"/api/v1/recite",                http_recite_handler,      #{}},
+        {"/api/v1/automations",           http_automations_handler, #{}},
+        {"/api/v1/automations/:id",       http_automations_handler, #{}},
+        %% Inbound webhook trigger (no auth — uses HMAC signature)
+        {"/api/v1/webhooks/in/:name",     http_webhook_in_handler,  #{}},
+        %% Webhook registration CRUD (requires API key)
+        {"/api/v1/webhooks",              http_webhooks_handler,    #{}},
+        {"/api/v1/webhooks/:id",          http_webhooks_handler,    #{}}
     ].
 
 %% ---------------------------------------------------------------------------

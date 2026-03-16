@@ -4,14 +4,17 @@
         {vsn, "0.2.0"},
         {registered, [clexical, clexical_sup, clexical_services_sup,
                       clexical_id, clexical_notifier,
-                      http_herald, automation_vassal]},
+                      http_herald, automation_vassal, webhook_vassal]},
         {applications, [
             kernel,
             stdlib,
             crypto,
+            inets,
+            ssl,
             mnesia,
             cowboy,
-            jsone
+            jsone,
+            bbmustache
         ]},
         {mod, {clexical_app, []}},
         {env, [
