@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  clexical:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: clexical:latest
+    container_name: clexical
+    restart: unless-stopped
+    ports:
+      - "${CLEXICAL_HTTP_PORT:-8080}:8080"
+    environment:
+      CLEXICAL_HTTP_PORT: "${CLEXICAL_HTTP_PORT:-8080}"
+      CLEXICAL_API_KEY: "${CLEXICAL_API_KEY:-changeme}"
+      CLEXICAL_LOG_LEVEL: "${CLEXICAL_LOG_LEVEL:-info}"
+      CLEXICAL_MNESIA_DIR: "/data/mnesia"
+    volumes:
+      - mnesia_data:/data/mnesia
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Optional: expose metrics/admin UI via a separate port
+  clexical-dev:
+    profiles: ["dev"]
+    build:
+      context: .
+      target: builder
+    image: clexical:dev
+    container_name: clexical-dev
+    restart: "no"
+    ports:
+      - "8080:8080"
+      - "4369:4369"   # Erlang port mapper
+    environment:
+      CLEXICAL_HTTP_PORT: "8080"
+      CLEXICAL_API_KEY: "dev-secret"
+      CLEXICAL_LOG_LEVEL: "debug"
+      CLEXICAL_MNESIA_DIR: "/tmp/mnesia"
+    command: ["rebar3", "shell"]
+
+volumes:
+  mnesia_data:
+    driver: local

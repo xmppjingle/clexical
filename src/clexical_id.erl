@@ -21,7 +21,7 @@
 ]).
 
 start_link(_Opts) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [_Opts], []).
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 stop() ->
     gen_server:call(?MODULE, stop).
@@ -29,33 +29,34 @@ stop() ->
 init(_) ->
     {ok, #state{id=0}}.
 
-handle_info(Record, State) ->
-    lager:debug("Unknown Info Request: ~p~n", [Record]),
+handle_info(_Record, State) ->
     {noreply, State}.
 
 handle_cast(_Msg, State) ->
-    lager:debug("Received Cast: ~p~n", [_Msg]),
     {noreply, State}.
 
 handle_call(fresh_id, _From, #state{id=LID}=State) ->
     ID = LID + 1,
-    {{_, _, D}, _} = calendar:local_time(),
-    BID = erlang:integer_to_binary(ID),
-    BD = erlang:integer_to_binary(D),
-    {reply, <<BD/binary, "=", BID/binary>>, State#state{id=ID}};
+    %% Use a combination of monotonic time and counter for uniqueness.
+    Ts = erlang:monotonic_time(microsecond),
+    BID = integer_to_binary(ID),
+    BTs = integer_to_binary(Ts),
+    {reply, <<BTs/binary, "-", BID/binary>>, State#state{id=ID}};
 
-handle_call(Info, _From, _State) ->
-    lager:info("Received Call: ~p~n", [Info]),
-    {reply, ok, _State}.
+handle_call(stop, _From, State) ->
+    {stop, normal, ok, State};
+handle_call(_Info, _From, State) ->
+    {reply, ok, State}.
 
 terminate(_Reason, _State) ->
-    lager:info("Terminated Component.", []),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
+%% ---------------------------------------------------------------------------
 %% API
+%% ---------------------------------------------------------------------------
 
 -spec fresh_id() -> binary().
 fresh_id() ->

@@ -1,0 +1,27 @@
+## Node name — override with RELX_NODENAME env var in Docker
+-name clexical@127.0.0.1
+
+## Cookie — override with RELX_COOKIE env var
+-setcookie clexical_secret
+
+## Increase port range for distribution
+-kernel inet_dist_listen_min 9100
+-kernel inet_dist_listen_max 9200
+
+## Async threads
++A 16
+
+## Scheduler threads = number of online CPUs
++S 0:0
+
+## Enable SMP
+-smp enable
+
+## Heap configuration
++hms 4096
+
+## Max number of processes
++P 1048576
+
+## Enable time-corrected clock
++c true

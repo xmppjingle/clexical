@@ -45,47 +45,51 @@ stop() ->
     gen_server:call(?MODULE, stop).
 
 init([{Herald, HOpts}, {Scribe, SOpts}, {Vassal, VOpts}]) ->
-    lager:info(?LOGO,[]),
+    logger:info(?LOGO),
     Herald:initialize(HOpts),
     Scribe:initialize(SOpts),
     Vassal:initialize(VOpts),
     S = #state{herald=Herald, scribe=Scribe, vassal=Vassal},
-    lager:info("Clexical Started with: ~p~n", [S]),
+    logger:info("Clexical Started with: ~p", [S]),
     {ok, S}.
 
 handle_info(Record, State) ->
-    lager:debug("Unknown Info Request: ~p~n", [Record]),
+    logger:debug("Unknown Info Request: ~p", [Record]),
     {noreply, State}.
 
 handle_cast({recite, #letter{}=Letter},#state{herald=Herald}=State) ->
-    lager:debug("Recite Letter: ~p~n", [Herald:to_binary(Letter)]),
+    logger:debug("Recite Letter: ~p", [Herald:to_binary(Letter)]),
     spawn_monitor(?MODULE, pronounce, [Letter, State]),
     {noreply, State};
 handle_cast({attend, #letter{}=Letter}, #state{herald=Herald}=State) ->
-    lager:debug("Hear Letter: ~p~n", [Herald:to_binary(Letter)]),
+    logger:debug("Hear Letter: ~p", [Herald:to_binary(Letter)]),
     spawn_monitor(?MODULE, hear, [Letter, State]),
     spawn_monitor(?MODULE, proclaim, [Letter, State]),
     {noreply, State};
 handle_cast({proclaim, #letter{}=Letter}, #state{herald=Herald}=State) ->
-    lager:debug("Proclaim Letter: ~p~n", [Herald:to_binary(Letter)]),
+    logger:debug("Proclaim Letter: ~p", [Herald:to_binary(Letter)]),
     spawn_monitor(?MODULE, proclaim, [Letter, State]),
     {noreply, State};
 handle_cast(_Msg, State) ->
-    lager:debug("Received Cast: ~p~n", [_Msg]),
+    logger:debug("Received Cast: ~p", [_Msg]),
     {noreply, State}.
 
-handle_call(Info, _From, _State) ->
-    lager:info("Received Call: ~p~n", [Info]),
-    {reply, ok, _State}.
+handle_call(stop, _From, State) ->
+    {stop, normal, ok, State};
+handle_call(Info, _From, State) ->
+    logger:info("Received Call: ~p", [Info]),
+    {reply, ok, State}.
 
 terminate(_, _) ->
-    lager:debug("Terminating...~n~p", [?MODULE]),
+    logger:debug("Terminating: ~p", [?MODULE]),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
+%% ---------------------------------------------------------------------------
 %% Clexical Functions
+%% ---------------------------------------------------------------------------
 
 -spec recite(#letter{}) -> any().
 recite(#letter{}=L) ->
@@ -106,10 +110,7 @@ pronounce(#letter{predicates=[#predicate{action = {preposition,_}} = P|T]} = Let
     pronounce(Letter#letter{predicates=T}, State);
 pronounce(#letter{predicates=[#predicate{action = {verb,_}} = P|T]} = Letter, #state{last_predicate = LP} = State) ->
     PP = fill_subject(fill_id(P), LP),
-    % ID = PP#predicate.id,
-    % _WID = binary_to_atom(<<"work_", ID/binary>>, utf8),
     {_PID, _Ref} = spawn_monitor(?MODULE, say, [Letter#letter{predicates=[PP]}, State]),
-    % register(WID, PID),
     pronounce(Letter#letter{predicates=T}, State#state{last_predicate=PP});
 pronounce(#letter{predicates=[]} = Letter, #state{last_predicate = _LP} = State) ->
     {_PID, _Ref} = spawn_monitor(?MODULE, say, [Letter, State]);
@@ -119,23 +120,21 @@ pronounce(_, _) ->
 -spec hear(#letter{}, #state{}) -> any().
 hear(#letter{predicates=[#predicate{action={preposition,_}}=P|T]}=Letter, #state{scribe=Scribe, herald=Herald}=State) ->
     Key = compose_key(P),
-    case Scribe:recall(Key) of
-        #predicate{} = PP ->
-            ok;
+    PP = case Scribe:recall(Key) of
+        #predicate{} = Found ->
+            Found;
         _ ->
             case Scribe:recall(compose_key(P#predicate{adjectives = #{}})) of
-                #predicate{} = PP ->
-                    ok;
+                #predicate{} = Found2 ->
+                    Found2;
                 _ ->
                     case Scribe:recall(compose_key(P#predicate{id = ?ANY_ID, subject = ?ANY_SUBJECT, adjectives = #{}})) of
-                        #predicate{} = PP ->
-                            ok;
-                        PP ->
-                            ok
+                        #predicate{} = Found3 -> Found3;
+                        Other -> Other
                     end
             end
     end,
-    lager:debug("Recall[~p]: ~p~n", [Key, PP]),
+    logger:debug("Recall[~p]: ~p", [Key, PP]),
     pronounce(Letter#letter{predicates=Herald:excerpts(PP)}, State#state{last_predicate=P}),
     hear(Letter#letter{predicates=T}, State);
 hear(#letter{predicates=[#predicate{action={verb,_}}|T]}=Letter, #state{}=State) ->
@@ -143,17 +142,15 @@ hear(#letter{predicates=[#predicate{action={verb,_}}|T]}=Letter, #state{}=State)
 hear(_, _) ->
     ok. % We don't take actions based on what we hear
 
-% King's Functions
-
 -spec say(#letter{}, #state{}) -> any().
 say(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{herald=Herald, vassal=Vassal, last_predicate=LP}=State) ->
-    lager:debug("Say: ~p~n", [Letter]),
+    logger:debug("Say: ~p", [Letter]),
     pronounce(Letter#letter{predicates=Herald:excerpts(P)}, State#state{last_predicate=P}),
     Reply = Vassal:work(Letter#letter{predicates=[P]}, LP),
     hear(Reply, State),
     proclaim(Reply, State);
-say(#letter{predicates=[]}=Letter, #state{herald=_Herald, vassal=Vassal, last_predicate=LP}=State) ->
-    lager:debug("Say: ~p~n", [Letter]),
+say(#letter{predicates=[]}=Letter, #state{vassal=Vassal, last_predicate=LP}=State) ->
+    logger:debug("Say: ~p", [Letter]),
     Reply = Vassal:work(Letter, LP),
     hear(Reply, State),
     proclaim(Reply, State);
@@ -163,19 +160,21 @@ say(_,_) ->
 -spec refrain(#letter{}, #state{}) -> any().
 refrain(#letter{predicates=[#predicate{}=P|_]}=Letter, #state{herald=Herald, scribe=Scribe}=_State) ->
     Key = compose_key(P),
-    lager:debug("Refrain[~p]: ~p ~n", [Key, Herald:to_binary(Letter)]),
+    logger:debug("Refrain[~p]: ~p", [Key, Herald:to_binary(Letter)]),
     Scribe:curb(Key, P);
 refrain(_,_) ->
     ok.
 
 -spec proclaim(#letter{}, #state{}) -> any().
 proclaim(#letter{predicates=[#predicate{}|_]}=Letter, #state{herald=Herald}) ->
-    lager:debug("Proclaim: ~p ~n", [Herald:to_binary(Letter)]),
+    logger:debug("Proclaim: ~p", [Herald:to_binary(Letter)]),
     Herald:proclaim(Letter);
 proclaim(_, _) ->
-    ok. % We don't take actions based on what we don't know
+    ok.
 
-% Utils Functions
+%% ---------------------------------------------------------------------------
+%% Utility Functions
+%% ---------------------------------------------------------------------------
 
 -spec fill_subjects([#predicate{}], #predicate{}) -> [#predicate{}]|[].
 fill_subjects(PS, LP) ->
@@ -211,7 +210,8 @@ fill_id(#predicate{}=P, _) ->
 -spec compose_key(#predicate{}) -> binary().
 compose_key(#predicate{adjectives = #{} = Map} = P) when map_size(Map) > 0 ->
     BareKey = compose_key(P#predicate{adjectives=#{}}),
-    Suffix = maps:fold(fun(_K, V, A) -> <<A/binary, V/binary>> end, <<>>, maps:filter(fun(K, _) -> case K of <<"id">> -> false; <<"subject">> -> false; _ -> true end end, Map)),
+    Suffix = maps:fold(fun(_K, V, A) -> <<A/binary, V/binary>> end, <<>>,
+                 maps:filter(fun(K, _) -> K /= <<"id">> andalso K /= <<"subject">> end, Map)),
     <<BareKey/binary, Suffix/binary>>;
 compose_key(#predicate{action={_,BName}, subject=Subject, id=ID}) ->
     <<Subject/binary, ".", ID/binary, BName/binary>>;
@@ -224,10 +224,4 @@ get_adjective(Key, Map) ->
 
 -spec get_adjective(binary(), map(), any()) -> binary() | undefined.
 get_adjective(Key, Map, Default) ->
-    case maps:is_key(Key, Map) of
-        true ->
-            V = maps:get(Key, Map);
-        _ ->
-            V = Default
-    end,
-    V.
+    maps:get(Key, Map, Default).

@@ -1,15 +1,23 @@
 {application, clexical,
     [
-        {description, "Clexical Event Driven Meta Evaluator"},
-        {vsn, git},
-        {registered, []},
+        {description, "Clexical — Event-Driven Backend with HTTP REST API and Permanent Automations"},
+        {vsn, "0.2.0"},
+        {registered, [clexical, clexical_sup, clexical_id, clexical_notifier,
+                      http_herald, automation_vassal]},
         {applications, [
             kernel,
             stdlib,
+            crypto,
+            mnesia,
+            cowboy,
+            jsone,
             lager
         ]},
         {mod, {clexical_app, []}},
         {env, [
-
+            %% Override via sys.config or OS environment variables:
+            %%   CLEXICAL_HTTP_PORT  (default 8080)
+            %%   CLEXICAL_API_KEY    (default "changeme")
+            %%   CLEXICAL_MNESIA_DIR (default /tmp/clexical_mnesia)
         ]}
     ]}.

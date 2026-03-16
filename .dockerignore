@@ -1,0 +1,7 @@
+_build/
+.git/
+*.beam
+erl_crash.dump
+.eunit/
+*.coverdata
+priv/log/
