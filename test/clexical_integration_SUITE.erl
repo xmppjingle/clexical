@@ -867,98 +867,106 @@ xml_nested_abstract(_Config) ->
 %% XML DSL SHORTHAND TESTS
 %% ---------------------------------------------------------------------------
 
-%% <on:*> and <do:*> map to verb predicates
+%% on:* → event (preposition); anything else → action (verb)
 xml_dsl_on_do(_Config) ->
     XmlBody = <<"<letter subject=\"dsl-1\" author=\"test\" type=\"decree\">\n"
                 "  <on:create entity=\"order\" source=\"web\"/>\n"
-                "  <do:notify channel=\"slack\" to=\"#ops\"/>\n"
+                "  <notify channel=\"slack\" to=\"#ops\"/>\n"
                 "</letter>">>,
     Letter = xml_letter:from_binary(XmlBody),
     ?assertMatch(#letter{subject = <<"dsl-1">>}, Letter),
     [P1, P2] = Letter#letter.predicates,
-    ?assertEqual({verb, <<"on:create">>}, P1#predicate.action),
+    %% on:* → preposition (event trigger)
+    ?assertEqual({preposition, <<"on:create">>}, P1#predicate.action),
     ?assertEqual(#{<<"entity">> => <<"order">>, <<"source">> => <<"web">>},
                  P1#predicate.adjectives),
-    ?assertEqual({verb, <<"do:notify">>}, P2#predicate.action),
+    %% anything else → verb (action)
+    ?assertEqual({verb, <<"notify">>}, P2#predicate.action),
     ?assertEqual(#{<<"channel">> => <<"slack">>, <<"to">> => <<"#ops">>},
                  P2#predicate.adjectives).
 
-%% <if:*> maps to preposition predicates
+%% Non-on:* elements (any name not starting with "on") are verbs
 xml_dsl_if_preposition(_Config) ->
+    %% Namespaced or plain — as long as it doesn't start with "on" it's a verb
     XmlBody = <<"<letter subject=\"dsl-2\" author=\"test\" type=\"decree\">\n"
-                "  <if:fieldValue field=\"amount\" op=\"gt\" value=\"1000\"/>\n"
-                "  <if:actor actor=\"guest\"/>\n"
+                "  <fieldValueCheck field=\"amount\" op=\"gt\" value=\"1000\"/>\n"
+                "  <actorCheck actor=\"guest\"/>\n"
                 "</letter>">>,
     Letter = xml_letter:from_binary(XmlBody),
     [P1, P2] = Letter#letter.predicates,
-    ?assertEqual({preposition, <<"if:fieldValue">>}, P1#predicate.action),
+    ?assertEqual({verb, <<"fieldValueCheck">>}, P1#predicate.action),
     ?assertEqual(#{<<"field">> => <<"amount">>,
                    <<"op">>    => <<"gt">>,
                    <<"value">> => <<"1000">>}, P1#predicate.adjectives),
-    ?assertEqual({preposition, <<"if:actor">>}, P2#predicate.action),
+    ?assertEqual({verb, <<"actorCheck">>}, P2#predicate.action),
     ?assertEqual(#{<<"actor">> => <<"guest">>}, P2#predicate.adjectives).
 
-%% <store:*> maps to preposition predicates
+%% Multiple on:* events all become prepositions
 xml_dsl_store_preposition(_Config) ->
     XmlBody = <<"<letter subject=\"dsl-3\" author=\"test\" type=\"decree\">\n"
-                "  <store:context key=\"orderId\" value=\"99\"/>\n"
-                "  <store:session token=\"abc123\"/>\n"
+                "  <on:create entity=\"order\"/>\n"
+                "  <on:update entity=\"order\" field=\"status\"/>\n"
                 "</letter>">>,
     Letter = xml_letter:from_binary(XmlBody),
     [P1, P2] = Letter#letter.predicates,
-    ?assertEqual({preposition, <<"store:context">>}, P1#predicate.action),
-    ?assertEqual(#{<<"key">> => <<"orderId">>, <<"value">> => <<"99">>},
-                 P1#predicate.adjectives),
-    ?assertEqual({preposition, <<"store:session">>}, P2#predicate.action).
+    ?assertEqual({preposition, <<"on:create">>}, P1#predicate.action),
+    ?assertEqual(#{<<"entity">> => <<"order">>}, P1#predicate.adjectives),
+    ?assertEqual({preposition, <<"on:update">>}, P2#predicate.action),
+    ?assertEqual(#{<<"entity">> => <<"order">>, <<"field">> => <<"status">>},
+                 P2#predicate.adjectives).
 
 %% Verbose <predicate> and DSL shorthand can coexist in the same <letter>
 xml_dsl_mixed_verbose_and_dsl(_Config) ->
     XmlBody = <<"<letter subject=\"dsl-4\" author=\"test\" type=\"decree\">\n"
-                "  <predicate action_type=\"preposition\" action=\"if:status\">\n"
+                "  <predicate action_type=\"preposition\" action=\"on:status\">\n"
                 "    <op>eq</op>\n"
                 "    <value>open</value>\n"
                 "  </predicate>\n"
-                "  <do:transitionStatus to=\"resolved\"/>\n"
-                "  <do:notify channel=\"email\" to=\"owner@example.com\"/>\n"
+                "  <transitionStatus to=\"resolved\"/>\n"
+                "  <notify channel=\"email\" to=\"owner@example.com\"/>\n"
                 "</letter>">>,
     Letter = xml_letter:from_binary(XmlBody),
     ?assertEqual(3, length(Letter#letter.predicates)),
     [P1, P2, P3] = Letter#letter.predicates,
-    ?assertEqual({preposition, <<"if:status">>},       P1#predicate.action),
-    ?assertEqual({verb, <<"do:transitionStatus">>},    P2#predicate.action),
-    ?assertEqual({verb, <<"do:notify">>},              P3#predicate.action),
+    %% Verbose form with explicit action_type
+    ?assertEqual({preposition, <<"on:status">>},   P1#predicate.action),
+    %% DSL shorthand: no "on" prefix → verb
+    ?assertEqual({verb, <<"transitionStatus">>},   P2#predicate.action),
+    ?assertEqual({verb, <<"notify">>},             P3#predicate.action),
     %% Verbose form uses child elements for adjectives
     ?assertEqual(#{<<"op">> => <<"eq">>, <<"value">> => <<"open">>},
                  P1#predicate.adjectives),
     %% DSL form uses attributes for adjectives
     ?assertEqual(#{<<"to">> => <<"resolved">>}, P2#predicate.adjectives).
 
-%% Full real-world order-fraud-detection script
+%% Full real-world order-fraud-detection script using the two-rule DSL
 xml_dsl_full_script(_Config) ->
     XmlBody = <<"<letter subject=\"order-99\" author=\"checkout\" type=\"decree\">\n"
-                "  <on:create entity=\"order\" source=\"web\"/>\n"
-                "  <if:fieldValue field=\"amount\" op=\"gt\" value=\"1000\"/>\n"
-                "  <if:actor actor=\"guest\"/>\n"
-                "  <do:transitionStatus to=\"fraud_review\"/>\n"
-                "  <do:notify channel=\"slack\" to=\"#fraud-team\""
-                "             message=\"High-value order\"/>\n"
-                "  <do:webhook url=\"https://risk.internal/score\""
-                "              method=\"POST\" timeout=\"4000\" retries=\"2\"/>\n"
+                "  <on:create   entity=\"order\" source=\"web\"/>\n"
+                "  <amountCheck field=\"amount\" op=\"gt\" value=\"1000\"/>\n"
+                "  <actorCheck  actor=\"guest\"/>\n"
+                "  <transitionStatus to=\"fraud_review\"/>\n"
+                "  <notify channel=\"slack\" to=\"#fraud-team\""
+                "          message=\"High-value order\"/>\n"
+                "  <webhook url=\"https://risk.internal/score\""
+                "           method=\"POST\" timeout=\"4000\" retries=\"2\"/>\n"
                 "</letter>">>,
     Letter = xml_letter:from_binary(XmlBody),
     ?assertMatch(#letter{subject = <<"order-99">>, type = decree}, Letter),
     ?assertEqual(6, length(Letter#letter.predicates)),
-    [Trigger, Cond1, Cond2, Trans, Notify, Webhook] = Letter#letter.predicates,
-    ?assertEqual({verb,        <<"on:create">>},          Trigger#predicate.action),
-    ?assertEqual({preposition, <<"if:fieldValue">>},      Cond1#predicate.action),
-    ?assertEqual({preposition, <<"if:actor">>},           Cond2#predicate.action),
-    ?assertEqual({verb,        <<"do:transitionStatus">>},Trans#predicate.action),
-    ?assertEqual({verb,        <<"do:notify">>},          Notify#predicate.action),
-    ?assertEqual({verb,        <<"do:webhook">>},         Webhook#predicate.action),
-    %% Verify a couple of adjective values
+    [Trigger, Cond1, Cond2, Trans, Notify, Hook] = Letter#letter.predicates,
+    %% on:* → event (preposition)
+    ?assertEqual({preposition, <<"on:create">>},      Trigger#predicate.action),
+    %% everything else → action (verb)
+    ?assertEqual({verb, <<"amountCheck">>},            Cond1#predicate.action),
+    ?assertEqual({verb, <<"actorCheck">>},             Cond2#predicate.action),
+    ?assertEqual({verb, <<"transitionStatus">>},       Trans#predicate.action),
+    ?assertEqual({verb, <<"notify">>},                 Notify#predicate.action),
+    ?assertEqual({verb, <<"webhook">>},                Hook#predicate.action),
+    %% Spot-check adjective values
     ?assertEqual(<<"order">>, maps:get(<<"entity">>, Trigger#predicate.adjectives)),
     ?assertEqual(<<"1000">>,  maps:get(<<"value">>,  Cond1#predicate.adjectives)),
-    ?assertEqual(<<"POST">>,  maps:get(<<"method">>, Webhook#predicate.adjectives)).
+    ?assertEqual(<<"POST">>,  maps:get(<<"method">>, Hook#predicate.adjectives)).
 
 %% DSL attributes are all preserved as string binaries
 xml_dsl_adjective_attrs(_Config) ->

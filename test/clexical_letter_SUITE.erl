@@ -26,7 +26,11 @@
     predicate_map_roundtrip_verb/1,
     predicate_map_roundtrip_preposition/1,
     nested_abstract_sub_letter/1,
-    letter_wildcard_constants/1
+    letter_wildcard_constants/1,
+    dsl_event_pattern_match/1,
+    dsl_event_binding/1,
+    dsl_event_mixed_binding_and_match/1,
+    dsl_verb_action/1
 ]).
 
 suite() -> [{timetrap, {seconds, 10}}].
@@ -47,7 +51,11 @@ all() ->
         predicate_map_roundtrip_verb,
         predicate_map_roundtrip_preposition,
         nested_abstract_sub_letter,
-        letter_wildcard_constants
+        letter_wildcard_constants,
+        dsl_event_pattern_match,
+        dsl_event_binding,
+        dsl_event_mixed_binding_and_match,
+        dsl_verb_action
     ].
 
 %% ---------------------------------------------------------------------------
@@ -174,3 +182,59 @@ letter_wildcard_constants(_Config) ->
     ?assertEqual(<<"*SUBJECT*">>,   ?ANY_SUBJECT),
     ?assertEqual(<<"*RECIPIENT*">>, ?ANY_RECIPIENT),
     ?assertEqual(<<"*AUTHOR*">>,    ?ANY_AUTHOR).
+
+%% ---------------------------------------------------------------------------
+%% DSL event attribute semantics
+%% ---------------------------------------------------------------------------
+
+%% Attributes without _ prefix are pattern-match constraints
+dsl_event_pattern_match(_Config) ->
+    Xml = <<"<letter subject=\"s\" type=\"decree\">\n"
+            "  <on:complete status_code=\"200\" event=\"payment\"/>\n"
+            "</letter>">>,
+    Letter = xml_letter:from_binary(Xml),
+    [P] = Letter#letter.predicates,
+    ?assertEqual({preposition, <<"on:complete">>}, P#predicate.action),
+    {Matches, Bindings} = xml_letter:event_adjectives(P),
+    ?assertEqual(#{<<"status_code">> => <<"200">>,
+                   <<"event">>       => <<"payment">>}, Matches),
+    ?assertEqual(#{}, Bindings).
+
+%% Attributes with _ prefix are binding variables; _ stripped in Bindings key
+dsl_event_binding(_Config) ->
+    Xml = <<"<letter subject=\"s\" type=\"decree\">\n"
+            "  <on:complete _status_code=\"result_code\" _body=\"response_body\"/>\n"
+            "</letter>">>,
+    Letter = xml_letter:from_binary(Xml),
+    [P] = Letter#letter.predicates,
+    {Matches, Bindings} = xml_letter:event_adjectives(P),
+    ?assertEqual(#{}, Matches),
+    %% Bindings: field name (underscore stripped) → variable name
+    ?assertEqual(#{<<"status_code">>   => <<"result_code">>,
+                   <<"body">>          => <<"response_body">>}, Bindings).
+
+%% Mix of pattern-match and binding attributes in the same event
+dsl_event_mixed_binding_and_match(_Config) ->
+    Xml = <<"<letter subject=\"s\" type=\"decree\">\n"
+            "  <on:complete status_code=\"200\" _body=\"response_body\"/>\n"
+            "</letter>">>,
+    Letter = xml_letter:from_binary(Xml),
+    [P] = Letter#letter.predicates,
+    {Matches, Bindings} = xml_letter:event_adjectives(P),
+    ?assertEqual(#{<<"status_code">> => <<"200">>}, Matches),
+    ?assertEqual(#{<<"body">> => <<"response_body">>}, Bindings).
+
+%% Verb actions: all attributes are plain adjectives; event_adjectives treated
+%% the same way (no _ prefix → all in Matches)
+dsl_verb_action(_Config) ->
+    Xml = <<"<letter subject=\"s\" type=\"decree\">\n"
+            "  <notify channel=\"slack\" to=\"#ops\"/>\n"
+            "  <transitionStatus to=\"resolved\"/>\n"
+            "</letter>">>,
+    Letter = xml_letter:from_binary(Xml),
+    [N, T] = Letter#letter.predicates,
+    ?assertEqual({verb, <<"notify">>},           N#predicate.action),
+    ?assertEqual({verb, <<"transitionStatus">>}, T#predicate.action),
+    ?assertEqual(#{<<"channel">> => <<"slack">>, <<"to">> => <<"#ops">>},
+                 N#predicate.adjectives),
+    ?assertEqual(#{<<"to">> => <<"resolved">>}, T#predicate.adjectives).

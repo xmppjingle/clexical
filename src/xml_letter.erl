@@ -11,14 +11,14 @@
 %%   <letter subject="entity-id" author="system" type="decree" recipient="">
 %%
 %%     <!-- verb predicate -->
-%%     <predicate action_type="verb" action="do:notify">
+%%     <predicate action_type="verb" action="notify">
 %%       <channel>slack</channel>
 %%       <to>#ops</to>
 %%     </predicate>
 %%
-%%     <!-- preposition predicate -->
-%%     <predicate action_type="preposition" action="if:fieldValue">
-%%       <field>amount</field><op>gt</op><value>500</value>
+%%     <!-- preposition predicate (event trigger) -->
+%%     <predicate action_type="preposition" action="on:create">
+%%       <entity>order</entity>
 %%     </predicate>
 %%
 %%   </letter>
@@ -26,41 +26,55 @@
 %% 2. DSL shorthand form (element name = action; attributes = adjectives)
 %% -----------------------------------------------------------------------
 %%
+%% Convention — only two cases:
+%%
+%%   on:*   (starts with "on") → event / trigger  → preposition
+%%   <anything else>           → action            → verb
+%%
 %%   <letter subject="order-99" author="checkout" type="decree">
-%%
-%%     <!-- on:* and do:* → verb -->
-%%     <on:create  entity="order" source="web"/>
-%%     <do:notify  channel="slack" to="#fraud-team" message="High-value order"/>
-%%     <do:webhook url="https://risk.internal/score" method="POST"/>
-%%
-%%     <!-- if:* and store:* → preposition -->
-%%     <if:fieldValue field="amount" op="gt" value="1000"/>
-%%     <if:actor      actor="guest"/>
-%%     <store:context key="orderId" value="{{subject}}"/>
-%%
+%%     <on:create  entity="order" source="web"/>          <!-- event  -->
+%%     <transitionStatus to="fraud_review"/>              <!-- action -->
+%%     <notify channel="slack" to="#fraud-team"/>         <!-- action -->
+%%     <webhook url="https://risk.internal/score"
+%%              method="POST" timeout="4000"/>            <!-- action -->
 %%   </letter>
 %%
-%% Both forms can be mixed in the same <letter>.
+%% Both forms can be mixed freely in the same <letter>.
 %%
 %% Rules (DSL form):
-%%   • on:*    → {verb,        <<"on:*">>}
-%%   • do:*    → {verb,        <<"do:*">>}
-%%   • if:*    → {preposition, <<"if:*">>}
-%%   • store:* → {preposition, <<"store:*">>}
-%%   • Any other namespace:local not matching above → {verb, <<"ns:local">>}
-%%   • The special attributes `id` and `subject` map to predicate.id /
-%%     predicate.subject; all other attributes become adjectives.
-%%   • <abstract> is not supported in DSL shorthand (use verbose form for that).
+%%   • Name starts with "on" → {preposition, Name}  (event trigger)
+%%   • Anything else         → {verb,        Name}  (action)
+%%   • `id` and `subject` attributes → predicate.id / predicate.subject
+%%   • All other attributes  → adjectives map
+%%   • <abstract> is not supported in DSL shorthand (use verbose form for that)
 %%
-%% Output (to_binary/1) always uses the verbose <predicate> form regardless of
-%% which input form was used, for maximum interoperability.
+%% Event attribute semantics (on:* predicates)
+%% -------------------------------------------
+%%
+%%   Attributes without "_" prefix → pattern match constraint:
+%%     <on:complete status_code="200"/>
+%%     fires only when the incoming event has status_code = "200"
+%%
+%%   Attributes with "_" prefix → binding (capture variable):
+%%     <on:complete _status_code="result_code"/>
+%%     fires for ANY status_code value; binds the received value to
+%%     the variable "result_code" for use downstream in the letter
+%%
+%%   Mixed:
+%%     <on:complete status_code="200" _body="response_body"/>
+%%     fires only when status_code = "200"; captures body → response_body
+%%
+%%   Use event_adjectives/1 to split a predicate's adjectives into
+%%   {Matches, Bindings} maps.
+%%
+%% Output (to_binary/1) always uses the verbose <predicate> form.
 %%
 -module(xml_letter).
 
 -include_lib("xmerl/include/xmerl.hrl").
 -include("../include/clexical.hrl").
 
--export([from_binary/1, to_binary/1]).
+-export([from_binary/1, to_binary/1, event_adjectives/1]).
 
 %% ---------------------------------------------------------------------------
 %% Public API
@@ -130,26 +144,21 @@ xml_to_predicate(#xmlElement{name = predicate,
         adjectives = Adjs,
         abstract   = Abstract
     };
-%% DSL shorthand: <on:create entity="order" source="web"/>
-%% Element name encodes the action; attributes become adjectives directly.
+%% DSL shorthand: element name IS the action; attributes ARE adjectives.
+%% on:* (starts with "on") → event trigger → preposition
+%% anything else           → action        → verb
 xml_to_predicate(#xmlElement{name = Name, attributes = Attrs})
-  when Name =/= letter ->
+  when Name =/= letter, Name =/= predicate ->
     NameBin = atom_to_binary(Name, utf8),
-    case binary:match(NameBin, <<":">>) of
-        nomatch ->
-            %% Not a namespaced element and not a <predicate> — skip
-            undefined;
-        _ ->
-            {Kind, ActionBin} = classify_dsl_action(NameBin),
-            {Id, Subj, Adjs} = dsl_attrs_to_adjectives(Attrs),
-            #predicate{
-                id         = Id,
-                subject    = Subj,
-                action     = {Kind, ActionBin},
-                adjectives = Adjs,
-                abstract   = undefined
-            }
-    end;
+    {Kind, ActionBin} = classify_dsl_action(NameBin),
+    {Id, Subj, Adjs} = dsl_attrs_to_adjectives(Attrs),
+    #predicate{
+        id         = Id,
+        subject    = Subj,
+        action     = {Kind, ActionBin},
+        adjectives = Adjs,
+        abstract   = undefined
+    };
 xml_to_predicate(_) ->
     undefined.
 
@@ -233,12 +242,37 @@ abstract_to_xml(Bin) when is_binary(Bin) ->
 %% DSL helpers
 %% ---------------------------------------------------------------------------
 
-%% Map DSL namespace prefix to {action_kind, action_binary}.
-classify_dsl_action(<<"on:",    _/binary>> = A) -> {verb,        A};
-classify_dsl_action(<<"do:",    _/binary>> = A) -> {verb,        A};
-classify_dsl_action(<<"if:",    _/binary>> = A) -> {preposition, A};
-classify_dsl_action(<<"store:", _/binary>> = A) -> {preposition, A};
-classify_dsl_action(A)                          -> {verb,        A}.
+%% Split an event predicate's adjectives into {Matches, Bindings}.
+%%
+%%   Matches  — attributes without "_" prefix: #{field => expected_value}
+%%              The event only fires when these field values match exactly.
+%%
+%%   Bindings — attributes with "_" prefix: #{field => variable_name}
+%%              The event fires for any value; the received value is captured
+%%              as `variable_name` for downstream use (template, webhook, etc.)
+%%              The leading "_" is stripped from the field name in the result.
+%%
+%% Example:
+%%   <on:complete status_code="200" _body="response_body"/>
+%%   → Matches  = #{<<"status_code">> => <<"200">>}
+%%   → Bindings = #{<<"body">> => <<"response_body">>}
+%%
+-spec event_adjectives(#predicate{}) ->
+    {Matches :: #{binary() => binary()},
+     Bindings :: #{binary() => binary()}}.
+event_adjectives(#predicate{adjectives = Adjs}) ->
+    maps:fold(fun
+        (<<"_", Field/binary>>, VarName, {M, B}) ->
+            {M, maps:put(Field, VarName, B)};
+        (Field, Value, {M, B}) ->
+            {maps:put(Field, Value, M), B}
+    end, {#{}, #{}}, Adjs).
+
+%% Two cases only:
+%%   starts with "on" → event trigger → preposition
+%%   anything else    → action        → verb
+classify_dsl_action(<<"on", _/binary>> = A) -> {preposition, A};
+classify_dsl_action(A)                      -> {verb,        A}.
 
 %% Partition DSL element attributes into id, subject, and the adjectives map.
 %% The special attributes `id` and `subject` map to the predicate record fields;
