@@ -3,45 +3,57 @@
 %%
 %% Uses OTP's built-in xmerl (no extra deps).
 %%
-%% Wire format
-%% -----------
+%% Two wire formats are accepted simultaneously in the same document:
+%%
+%% 1. Verbose <predicate> form
+%% ---------------------------
 %%
 %%   <letter subject="entity-id" author="system" type="decree" recipient="">
 %%
-%%     <!-- verb predicate: executed by the vassal -->
+%%     <!-- verb predicate -->
 %%     <predicate action_type="verb" action="do:notify">
 %%       <channel>slack</channel>
 %%       <to>#ops</to>
-%%       <message>Alert fired</message>
 %%     </predicate>
 %%
-%%     <!-- preposition predicate: stored by the scribe (condition / context) -->
+%%     <!-- preposition predicate -->
 %%     <predicate action_type="preposition" action="if:fieldValue">
-%%       <field>amount</field>
-%%       <op>gt</op>
-%%       <value>500</value>
-%%     </predicate>
-%%
-%%     <!-- nested sub-letter via <abstract> -->
-%%     <predicate action_type="verb" action="dispatch">
-%%       <abstract>
-%%         <letter subject="sub-entity" type="decree">
-%%           <predicate action_type="verb" action="do:notify">
-%%             <channel>ops</channel>
-%%           </predicate>
-%%         </letter>
-%%       </abstract>
+%%       <field>amount</field><op>gt</op><value>500</value>
 %%     </predicate>
 %%
 %%   </letter>
 %%
-%% Rules:
-%%   • <letter> attributes: subject, author, recipient, type (decree|bulletin)
-%%   • <predicate> attributes: action_type (verb|preposition), action, id, subject
-%%   • Predicate adjectives are direct child elements: <key>value</key>
-%%   • <abstract> child may contain a nested <letter> (recursively XML-encoded)
-%%     or plain text (treated as opaque binary, e.g. JSON)
-%%   • Unknown/empty elements are silently skipped
+%% 2. DSL shorthand form (element name = action; attributes = adjectives)
+%% -----------------------------------------------------------------------
+%%
+%%   <letter subject="order-99" author="checkout" type="decree">
+%%
+%%     <!-- on:* and do:* → verb -->
+%%     <on:create  entity="order" source="web"/>
+%%     <do:notify  channel="slack" to="#fraud-team" message="High-value order"/>
+%%     <do:webhook url="https://risk.internal/score" method="POST"/>
+%%
+%%     <!-- if:* and store:* → preposition -->
+%%     <if:fieldValue field="amount" op="gt" value="1000"/>
+%%     <if:actor      actor="guest"/>
+%%     <store:context key="orderId" value="{{subject}}"/>
+%%
+%%   </letter>
+%%
+%% Both forms can be mixed in the same <letter>.
+%%
+%% Rules (DSL form):
+%%   • on:*    → {verb,        <<"on:*">>}
+%%   • do:*    → {verb,        <<"do:*">>}
+%%   • if:*    → {preposition, <<"if:*">>}
+%%   • store:* → {preposition, <<"store:*">>}
+%%   • Any other namespace:local not matching above → {verb, <<"ns:local">>}
+%%   • The special attributes `id` and `subject` map to predicate.id /
+%%     predicate.subject; all other attributes become adjectives.
+%%   • <abstract> is not supported in DSL shorthand (use verbose form for that).
+%%
+%% Output (to_binary/1) always uses the verbose <predicate> form regardless of
+%% which input form was used, for maximum interoperability.
 %%
 -module(xml_letter).
 
@@ -90,9 +102,16 @@ xml_to_letter(#xmlElement{name = letter, attributes = Attrs, content = Content})
         author     = attr_bin(Attrs, author,    <<>>),
         recipient  = attr_bin(Attrs, recipient, <<>>),
         type       = to_letter_type(attr_bin(Attrs, type, <<"decree">>)),
-        predicates = [xml_to_predicate(E)
-                      || E <- Content, is_record(E, xmlElement),
-                         E#xmlElement.name =:= predicate],
+        predicates = lists:filtermap(fun(E) ->
+                         case is_record(E, xmlElement) of
+                             true ->
+                                 case xml_to_predicate(E) of
+                                     #predicate{} = P -> {true, P};
+                                     _                -> false
+                                 end;
+                             false -> false
+                         end
+                     end, Content),
         via        = http
     };
 xml_to_letter(_) ->
@@ -110,7 +129,29 @@ xml_to_predicate(#xmlElement{name = predicate,
         action     = {Kind, Name},
         adjectives = Adjs,
         abstract   = Abstract
-    }.
+    };
+%% DSL shorthand: <on:create entity="order" source="web"/>
+%% Element name encodes the action; attributes become adjectives directly.
+xml_to_predicate(#xmlElement{name = Name, attributes = Attrs})
+  when Name =/= letter ->
+    NameBin = atom_to_binary(Name, utf8),
+    case binary:match(NameBin, <<":">>) of
+        nomatch ->
+            %% Not a namespaced element and not a <predicate> — skip
+            undefined;
+        _ ->
+            {Kind, ActionBin} = classify_dsl_action(NameBin),
+            {Id, Subj, Adjs} = dsl_attrs_to_adjectives(Attrs),
+            #predicate{
+                id         = Id,
+                subject    = Subj,
+                action     = {Kind, ActionBin},
+                adjectives = Adjs,
+                abstract   = undefined
+            }
+    end;
+xml_to_predicate(_) ->
+    undefined.
 
 %% Each child element of <predicate> becomes an adjective key→value pair.
 %% The special <abstract> child is extracted separately.
@@ -187,6 +228,30 @@ abstract_to_xml(Bin) when is_binary(Bin) ->
         _ ->
             [<<"  <abstract>">>, xml_escape(Bin), <<"</abstract>\n">>]
     end.
+
+%% ---------------------------------------------------------------------------
+%% DSL helpers
+%% ---------------------------------------------------------------------------
+
+%% Map DSL namespace prefix to {action_kind, action_binary}.
+classify_dsl_action(<<"on:",    _/binary>> = A) -> {verb,        A};
+classify_dsl_action(<<"do:",    _/binary>> = A) -> {verb,        A};
+classify_dsl_action(<<"if:",    _/binary>> = A) -> {preposition, A};
+classify_dsl_action(<<"store:", _/binary>> = A) -> {preposition, A};
+classify_dsl_action(A)                          -> {verb,        A}.
+
+%% Partition DSL element attributes into id, subject, and the adjectives map.
+%% The special attributes `id` and `subject` map to the predicate record fields;
+%% all others become adjective key→value pairs.
+dsl_attrs_to_adjectives(Attrs) ->
+    lists:foldl(fun(#xmlAttribute{name = AN, value = AV}, {Id, Subj, Adjs}) ->
+        ValBin = list_to_binary(AV),
+        case AN of
+            id      -> {ValBin, Subj, Adjs};
+            subject -> {Id, ValBin, Adjs};
+            _       -> {Id, Subj, maps:put(atom_to_binary(AN, utf8), ValBin, Adjs)}
+        end
+    end, {<<>>, <<>>, #{}}, Attrs).
 
 %% ---------------------------------------------------------------------------
 %% Helpers
