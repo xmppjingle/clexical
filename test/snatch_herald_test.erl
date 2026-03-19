@@ -5,24 +5,29 @@
 -include("../include/clexical_test.hrl").
 
 setup_test_() ->
-    application:start(xmpp),
     ?start_lager(),
     {setup,
         spawn,
         fun init_per_suite/0,
         fun end_per_suite/1,
-        [        
+        [
+            fun basic_parse_/0,
+            fun basic_cleanup_/0
         ]
     }.
 
 init_per_suite() ->
+    xmpp_herald:start_link([]),
     ok.
 
 end_per_suite(_Config) ->
-    meck:unload(),
+    gen_server:stop(xmpp_herald),
     ok.
 
-basic_parse_test() ->
+basic_parse_() ->
+    basic_parse_run().
+
+basic_parse_run() ->
     Bin = <<"<decree><offer id='1' subject='bestbuy' good='case'><onPurchase><celebrate/></onPurchase></offer></decree>">>,
     L = xmpp_herald:letter_from_binary(Bin),
     ?assert(L /= undefined),
@@ -33,7 +38,10 @@ basic_parse_test() ->
     K = xmpp_herald:excerpts(P),
     ?assert(K /= undefined).
 
-basic_cleanup_test() ->
+basic_cleanup_() ->
+    basic_cleanup_run().
+
+basic_cleanup_run() ->
     Bin = <<"<decree>
             <offer id='1' subject='bestbuy' good='case'>
                 <onPurchase>
