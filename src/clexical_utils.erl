@@ -1,6 +1,6 @@
 -module(clexical_utils).
 
--include_lib("xmpp.hrl").
+-include_lib("fast_xml/include/fxml.hrl").
 
 -export([
     remove_whitespaces_deeply/1,

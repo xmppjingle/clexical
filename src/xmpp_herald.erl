@@ -1,6 +1,6 @@
 -module(xmpp_herald).
 -include("../include/clexical.hrl").
--include_lib("xmpp.hrl").
+-include_lib("fast_xml/include/fxml.hrl").
 -behaviour(gen_server).
 -behaviour(herald).
 -behaviour(xmpp_linguist).
